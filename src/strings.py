@@ -1,10 +1,18 @@
 import re
+import pandas as pd
 
 
-def strip_string(df, string, column_index):
+def strip_string(df: pd.DataFrame, string: str, column_index: int) -> pd.DataFrame:
     """
+    Remove occurrences of a specified string from a column in the DataFrame.
 
-    :type df: data frame
+    Args:
+        df (pd.DataFrame): The DataFrame from which the string will be removed.
+        string (str): The string to be removed from the specified column.
+        column_index (int): Index of the column from which the string will be removed.
+
+    Returns:
+        pd.DataFrame: Modified DataFrame with the specified string removed from the selected column.
     """
     # selecting the column
     selected_column = df.iloc[:, column_index]
@@ -15,7 +23,17 @@ def strip_string(df, string, column_index):
     return df
 
 
-def strip_whitespace(df, column_index):
+def strip_whitespace(df: pd.DataFrame, column_index: int) -> pd.DataFrame:
+    """
+    Remove leading and trailing whitespace from text in the specified column of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame from which whitespace will be removed.
+        column_index (int): Index of the column in which whitespace will be removed.
+
+    Returns:
+        pd.DataFrame: Modified DataFrame with leading and trailing whitespace removed from the specified column.
+    """
     # Selecting column by index
     selected_column = df.iloc[:, column_index]
     # Removing white space from text
@@ -25,7 +43,19 @@ def strip_whitespace(df, column_index):
     return df
 
 
-def strip_after_char(df, char, row_index):
+def strip_after_char(df: pd.DataFrame, char: str, row_index: int) -> pd.DataFrame:
+    """
+    Remove characters occurring after the first instance of a specified character in the selected row of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame from which characters will be removed.
+        char (str): The character after which characters will be removed.
+        row_index (int): Index of the row in which characters will be removed.
+
+    Returns:
+        pd.DataFrame: Modified DataFrame with characters removed after
+        the first instance of the specified character in the selected row.
+    """
     # Selecting the row by index
     selected_row = df.iloc[row_index]
 
@@ -37,7 +67,7 @@ def strip_after_char(df, char, row_index):
     return df
 
 
-def round_column_to_precision(dataframe, column_number, precision):
+def round_column_to_precision(dataframe: pd.DataFrame, column_number: int, precision: int) -> pd.DataFrame:
     """
     Rounds a specified column of a DataFrame to the given precision,
     but only for elements that are numbers.
@@ -60,7 +90,7 @@ def round_column_to_precision(dataframe, column_number, precision):
     return dataframe
 
 
-def check_ref_des_name(df):
+def check_ref_des_name(df: pd.DataFrame) -> pd.DataFrame:
     """
     Check and reformat data in the reference designator column of a DataFrame.
 
@@ -96,7 +126,7 @@ def check_ref_des_name(df):
     rows_changed_count = 0
 
     # Loop through each row one at a time
-    for index, row in df.iterrows():
+    for i, (_, row) in enumerate(df.iterrows()):
         # get reference designator column data as a raw_string
         raw_string = str(row.iloc[column_index])
         # split reference designator column data raw_string to a list
@@ -121,7 +151,7 @@ def check_ref_des_name(df):
         designators = ','.join(designator_list)
 
         # Replace reference designator with reformatted raw_string
-        df.iloc[index - 1, column_index] = designators
+        df.iloc[i, column_index] = designators
 
         # update number of rows updated count
         if designators != raw_string:
@@ -133,7 +163,7 @@ def check_ref_des_name(df):
     return df  # Moved outside the loop to return after all rows are processed
 
 
-def check_duplicate_ref_des(df):
+def check_duplicate_ref_des(df: pd.DataFrame) -> None:
     """
     Check for duplicate reference designators in a DataFrame.
 
@@ -192,7 +222,7 @@ def check_duplicate_ref_des(df):
         print("No duplicates found.")
 
 
-def find_best_match_levenshtein(test_string, reference_strings):
+def find_best_match_levenshtein(test_string: str, reference_strings: str) -> str:
     """
     Finds the best match for a test string from a list of reference strings based on Levenshtein distance.
 
@@ -230,7 +260,7 @@ def find_best_match_levenshtein(test_string, reference_strings):
     return best_match
 
 
-def find_best_match_jaccard(test_string, reference_strings):
+def find_best_match_jaccard(test_string: str, reference_strings: str) -> str:
     """
     Finds the best match for a test string from a list of reference strings based on Jaccard similarity.
 
@@ -268,9 +298,10 @@ def find_best_match_jaccard(test_string, reference_strings):
     return best_match
 
 
-def check_consecutive_characters_presence(test_string, reference_string, consecutive_chars=3):
+def check_consecutive_characters_presence(test_string: str, reference_string: str, consecutive_chars=3) -> bool:
     """
-    Checks if at least the specified number of consecutive characters from the reference string are present in the test string.
+    Checks if at least the specified number of consecutive characters
+    from the reference string are present in the test string.
 
     Args:
         test_string (str): The string to check for presence of consecutive characters.
@@ -293,11 +324,13 @@ def check_consecutive_characters_presence(test_string, reference_string, consecu
         if consecutive_substring in test_string:
             return True
 
-    print("At least three consecutive characters of the reference string are present in the test string:", result)
-
     # If no matching consecutive substring found, return False
     return False
 
 
+def main():
+    pass  # do nothing
 
 
+if __name__ == '__main__':
+    main()
