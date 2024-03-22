@@ -68,3 +68,69 @@ def merge_row_data_when_no_found(df, source_column, destination_column):
 
     return updated_df
 
+
+def get_build_name_and_index_dict(data_frame: pd.DataFrame) -> dict:
+    import re
+    # start with empty dict
+    buildNameDict = {}
+
+    # Pattern 1: Match strings that consist only 1 to 3 alphabets
+    pattern1 = r'^[a-zA-Z]{1,2}$'
+    # Pattern 2: Match strings that start with an alphabet and end with an integer
+    pattern2 = r'^[a-zA-Z].*\d$'
+    # Pattern 3: Match strings that start with an alphabet, end with a decimal number,
+    # and optionally allow for a decimal point and additional digits after it
+    pattern3 = r'^[a-zA-Z].*\d+(\.\d+)?$'
+    # Combine the patterns with OR (|) operator
+    pattern = f"({'|'.join([pattern1, pattern2, pattern3])})"
+
+    # build name information is found in the top row
+    top_row = data_frame.iloc[0]
+
+    # iterate through each column to find the build name and index
+    for index, value in enumerate(top_row):
+        # when a build number is found
+        if re.match(pattern, str(value)):
+            # add it to the dictionary
+            buildNameDict[value] = index
+
+    # when dictionary is empty stop the application
+    if len(buildNameDict) == 0:
+        print("Error. No build name found")
+        exit()
+
+    return buildNameDict
+
+
+def delete_empty_zero_rows(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+
+    # Delete rows with empty values in the specified column
+    df = df.dropna(subset=[column_name])
+    # Delete rows with zero values in the specified column
+    df = df[df[column_name] != 0]
+
+    return df
+
+
+def duplicate_row_for_multiple_quantity(df: pd.DataFrame) -> pd.DataFrame:
+
+    # Create an empty DataFrame to store the updated rows
+    mdf = pd.DataFrame(columns=df.columns)
+
+    for index, old_row in df.iterrows():
+        while old_row['Qty'] > 1:
+            ref_des_list = old_row['Designator'].split(',')
+
+            new_row = old_row.copy()
+            new_row['Qty'] = 1
+            new_row['Designator'] = ref_des_list[0]
+
+            old_row['Qty'] -= 1
+            old_row['Designator'] = ','.join(ref_des_list[1:])
+
+            mdf.loc[len(mdf)] = new_row
+
+        mdf.loc[len(mdf)] = old_row
+
+    return mdf
+

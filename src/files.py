@@ -91,11 +91,11 @@ def get_excel_file_data(file_path):
                     if selected_table_index < 0 or selected_table_index >= len(sheet_names):
                         raise ValueError("Invalid table number.")
                     selected_sheet_name = sheet_names[selected_table_index]
-                    df = pd.read_excel(xls, selected_sheet_name)
+                    df = pd.read_excel(xls, selected_sheet_name, header=None)
                     print(f'Selected table: {selected_sheet_name}')
                     print(f'Read {df.shape[0]} rows and {df.shape[1]} columns')
                     # Clearing the DataFrame header
-                    df.columns = [''] * len(df.columns)
+                    # df.columns = [''] * len(df.columns)
                     return df
                 except ValueError:
                     print("Invalid input. Please enter a valid table number or 'x' to exit.")

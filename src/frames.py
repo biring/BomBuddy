@@ -108,8 +108,8 @@ def set_top_row_as_header(df):
     Returns:
     - pandas.DataFrame: The modified DataFrame with the header set and the top row removed.
     """
-    header = df.iloc[0]  # Extract the top row as header
-    modified_df = df[1:]  # Remove the top row
+    header = df.iloc[0].astype(str)  # Extract the top row as header and ensure it's string
+    modified_df = df.iloc[1:].reset_index(drop=True)  # Remove the top row and reset index
     modified_df.columns = header  # Set the header
 
     return modified_df
@@ -527,5 +527,97 @@ def merge_type_data_with_description(df):
     description_index = columns.get_single_header_index(df, 'Description', True)
 
     df = rows.merge_row_data_when_no_found(df, part_number_index, description_index)
+
+    return df
+
+
+def remove_unwanted_build_cost_data(dataFrame: pd.DataFrame) -> pd.DataFrame:
+    # get all the build names for which data is available in the dataframe
+    buildNameDict = rows.get_build_name_and_index_dict(dataFrame)
+    # only keep cost data from one build
+    dataFrame = columns.remove_unwanted_build_cost_data(dataFrame, buildNameDict)
+
+    return dataFrame
+
+
+def remove_zero_and_empty_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Removing rows with empty or zero quantity')
+
+    # keep tack of total rows before clean up
+    original_row_count = data_frame.shape[0]
+
+    # Delete zero or empty quantity rows
+    data_frame = rows.delete_empty_zero_rows(data_frame, 'Qty')
+
+    # user interface message
+    updated_row_count = data_frame.shape[0]
+    print(f"Number of rows reduced from {original_row_count} to {updated_row_count}")
+
+    return data_frame
+
+
+def reformat_cbom_ref_des(data_frame: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Cleaning up reference designators names... ')
+
+    # ref des should be uppercase
+    data_frame['Designator'] = data_frame['Designator'].str.upper()
+
+    # ref des are separated by comma
+    data_frame['Designator'] = data_frame['Designator'].str.replace(':', ',')
+    data_frame['Designator'] = data_frame['Designator'].str.replace(';', ',')
+    data_frame['Designator'] = data_frame['Designator'].str.replace('、', ',')
+    data_frame['Designator'] = data_frame['Designator'].str.replace('，', ',')
+
+    # remove white space
+    data_frame['Designator'] = data_frame['Designator'].str.replace(' ', '')
+
+    # special case - invalid names with '-' replace with 'X'
+    data_frame['Designator'] = data_frame['Designator'].str.replace('-', 'X')
+    # special case -
+    data_frame['Designator'] = data_frame['Designator'].str.replace('FOR', 'WIRE')
+    # remove starting and trailing comma
+    data_frame['Designator'] = data_frame['Designator'].str.lstrip(',')
+    data_frame['Designator'] = data_frame['Designator'].str.rstrip(',')
+
+    # user interface message
+    print('Done')
+
+    return data_frame
+
+
+def split_multiple_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Splitting multiple quantity to separate rows... ')
+
+    # keep tack of total rows before clean up
+    original_row_count = data_frame.shape[0]
+
+    # duplicate rows till qty is less than one while splitting ref des
+    data_frame = rows.duplicate_row_for_multiple_quantity(data_frame)
+
+    # user interface message
+    updated_row_count = data_frame.shape[0]
+    print(f"Number of rows increased from {original_row_count} to {updated_row_count}")
+
+    return data_frame
+
+
+def reorder_column_headers_for_cost_walk(df: pd.DataFrame) -> pd.DataFrame:
+    header_list = [
+        ['Designator', True, 'Designator'],
+        ['Component', True, 'Component'],
+        ['Description', True, 'Description'],
+        ['Manufacturer', True,'Manufacturer'],
+        ['Manufacturer P/N', True, 'Manufacturer P/N'],
+        ['Qty', True, 'Qty'],
+        ['U/P', False, 'U/P']
+    ]
+
+    df = columns.rename_and_reorder_headers(df, header_list)
 
     return df
