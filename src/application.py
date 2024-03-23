@@ -5,13 +5,13 @@ import frames
 
 
 def ebom_scrub_for_stella():
-    # *** read eBOM Excel data file ***
+    # *** read excel eBOM data file ***
     # get path to input data folder
-    folder_path = paths.get_path_to_inputs_folder()
-    # get path to input data folder
-    file_path = paths.get_excel_file_path(folder_path)
-    # get file data as data frame
-    data_frame = files.get_excel_file_data(file_path)
+    folder_path = paths.get_path_to_input_file_folder()
+    # get path to Excel file to read
+    file_path = paths.get_path_to_excel_file_in_folder(folder_path)
+    # read excel data file as a data frame
+    data_frame = files.read_excel_file_data(file_path)
 
     # *** clean up raw data to get header and BOM ***
     # delete empty rows
@@ -43,9 +43,12 @@ def ebom_scrub_for_stella():
     data_frame = frames.merge_type_data_with_description(data_frame)
 
     # *** write eBOM data to template ***
+    # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     file_name = "scrubbed_ebom.xlsx"
-    file_path = paths.build_path_to_outputs_file(folder_path, file_name)
+    # get path to Excel file to write
+    file_path = paths.set_path_to_excel_file(folder_path, file_name)
+    # write data frame to excel file
     data_frame.to_excel(file_path, index=True)  # Set index=False to exclude the DataFrame index from being written
     return
 
@@ -53,11 +56,11 @@ def ebom_scrub_for_stella():
 def cbom_scrub_for_cost_walk() -> None:
     # *** read cBOM Excel data file ***
     # get path to input data folder
-    folder_path = paths.get_path_to_inputs_folder()
-    # get path to input data folder
-    file_path = paths.get_excel_file_path(folder_path)
-    # get file data as data frame
-    data_frame = files.get_excel_file_data(file_path)
+    folder_path = paths.get_path_to_input_file_folder()
+    # get path to Excel file to read
+    file_path = paths.get_path_to_excel_file_in_folder(folder_path)
+    # read excel data file as a data frame
+    data_frame = files.read_excel_file_data(file_path)
 
     # *** clean up raw data ***
     # only keep cost data for build on interest
@@ -84,7 +87,7 @@ def cbom_scrub_for_cost_walk() -> None:
     # *** write cBOM data to template ***
     folder_path = paths.get_path_to_outputs_folder()
     file_name = "scrubbed_cbom.xlsx"
-    file_path = paths.build_path_to_outputs_file(folder_path, file_name)
+    file_path = paths.set_path_to_excel_file(folder_path, file_name)
     data_frame.to_excel(file_path, index=True)  # Set index=False to exclude the DataFrame index from being written
 
     return

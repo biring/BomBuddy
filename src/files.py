@@ -1,42 +1,6 @@
 # manage file data
-import pandas as pd
 
-def get_totals_data(path):
-    # Read the costed bill of material file
-    tempFileData = pd.ExcelFile(path)
-    # make a list of all the tabs
-    tempFileTabNames = tempFileData.sheet_names
-    # get the name of tab with overall quote data
-    totalTabName = ""
-    for name in tempFileTabNames:
-        if "Total" in name:
-            totalTabName = name
-            break  # we only expect one summary quote
-    # get totals tab data.
-    df = pd.read_excel(path, sheet_name=totalTabName, header=None)
-    return df
-
-def process_totals_data(df):
-    # set the search string to 'OHP'.
-    searchString = 'OHP'
-    # check each element in the DataFrame for a partial string match
-    matches = df.apply(lambda x: x.astype(str).str.contains(searchString, case=False))
-    # get row and column where the partial string matches
-    rows, cols = matches.values.nonzero()
-    rowToDelete = rows[0] - 1
-    # Drop rows above OHP
-    df.drop(index=rowToDelete, axis=0, inplace=True)
-    # Reindexing the rows
-    df = df.reset_index(drop=True)
-
-    return df
-
-def write_totals_data(path, df):
-    # Writing DataFrame to a CSV file
-    df.to_csv(path, index=False, header=False, sep='\t')
-
-
-def get_excel_file_data(file_path):
+def read_excel_file_data(file_path):
     """
     Read an Excel file and return its contents as a DataFrame if the file has only one tab.
     If the file has multiple tabs, prompt the user to select a tab.

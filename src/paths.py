@@ -3,106 +3,14 @@
 import os
 
 
-def get_sample_folder_path():
-    # Get path to directory of current file
-    path = os.path.dirname(__file__)
-    # Split path to get to project folder. Based on project folder this is once level above 'src'
-    if "src" in path:
-        path = os.path.split(path)[0]
-    # Build path to sample folder. Based on project folder arrangement this is in folder 'sample'
-    path = os.path.join(path, "sample")
-    # Good practice to make path OS independent
-    path = os.path.normpath(path)
-    # test the file path
-    check_path_to_folder_is_valid(path)
-    return path
-
-
-def build_path_to_outputs_file(folder_path, file_name="Temp.xlsx"):
-    path = os.path.join(folder_path, file_name)
+def set_path_to_excel_file(folder, file):
+    path = os.path.join(folder, file)
     # Good practice to make path OS independent
     path = os.path.normpath(path)
     return path
 
 
-def sample_file_path(name):
-    # Build path to sample data file
-    path = os.path.join(get_sample_folder_path(), name)
-    # make path OS independent
-    path = os.path.normpath(path)
-    # test the file path
-    check_path_to_folder_is_valid(path)
-    return path
-
-
-def check_path_to_folder_is_valid(folder_path):
-    """
-    Check if the specified folder path exists.
-
-    Parameters:
-    - folder_path (str): The path of the folder to be checked.
-
-    Returns:
-    - bool: True if the folder exists, False otherwise.
-
-    Usage:
-    - Call this function with the folder path you want to check.
-      Example: check_path_to_folder_is_valid("/path/to/your/folder")
-    """
-
-    import os
-    import sys
-
-    try:
-        # Check if the specified folder path exists
-        path_exists = os.path.exists(folder_path)
-        # If the path exists, return True
-        if path_exists:
-            return True
-
-        # If the path doesn't exist, raise FileNotFoundError
-        else:
-            raise FileNotFoundError
-
-    except FileNotFoundError:
-        # Print error message and details
-        print("Path to folder does not exist")
-        print(folder_path)
-        print("Application end")
-
-        # Exit the program
-        sys.exit()
-
-
-def get_input_file_path():
-    """
-    Prompt the user to enter the full path to an Excel file or 'X' or 'x' to exit.
-
-    Returns:
-        str: The file path as an 'r' string if provided by the user.
-
-    Example:
-        excel_path = get_excel_file_path_or_exit()
-        print("Excel file path:", excel_path)
-    """
-    # Keep trying until we get an Excel file or the user decides to exit
-    while True:
-        # Prompt user for input
-        file_path_or_exit = input("Enter the full path to the Excel file or 'X' or 'x' to exit: ")
-        # Check if user wants to exit
-        if file_path_or_exit.upper() == 'X' or file_path_or_exit.upper() == 'x':
-            print("Exiting the application.")
-            exit()
-        # Check if the file exists
-        elif os.path.exists(file_path_or_exit):
-            print("File exists.")
-            return fr"{file_path_or_exit}"  # Convert the file path to 'r' string format
-        # When file does not exist
-        else:
-            print("File not found. Please enter a valid file path.")
-
-
-def get_path_to_inputs_folder():
+def get_path_to_input_file_folder():
     """
     Retrieve the path to the input data folder within the project directory structure.
 
@@ -128,7 +36,7 @@ def get_path_to_inputs_folder():
     return path
 
 
-def get_excel_file_path(folder_path):
+def get_path_to_excel_file_in_folder(folder_path):
     """
     Prompts the user to select an Excel file from the specified folder.
 
