@@ -22,12 +22,12 @@ def get_user_selection(options: list, header_msg='Available items',
     """
 
     # local variables
-    select_msg += ' or "x" to exit: '
+    select_msg += ' (or "x" to exit): '
     length = len(options)
 
     # when there are no option we generate an error
     if length == 0:
-        raise ValueError('List of options for user selection is empty')
+        raise ValueError('Empty list provided for user selection')
     # when we only have one option we select it
     elif length == 1:
         user_selection = 0
@@ -36,7 +36,7 @@ def get_user_selection(options: list, header_msg='Available items',
         while True:
             try:
                 print()
-                print(header_msg)
+                print(f'*** {header_msg.upper()} ***')
                 # Print the list of options available for the user to select
                 for index, key in enumerate(options):
                     print(f"[{index}] {key}")

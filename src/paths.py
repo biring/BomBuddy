@@ -1,7 +1,9 @@
 # manage paths to files and folders
 
 import os
+import re
 
+import console
 
 def set_path_to_excel_file(folder, file):
     path = os.path.join(folder, file)
@@ -49,10 +51,6 @@ def get_path_to_excel_file_in_folder(folder_path):
     Raises:
     - FileNotFoundError: If no Excel files are found in the specified folder.
     """
-
-    import os
-    import re
-
     # get the list of files in the folder
     files = os.listdir(folder_path)
 
@@ -60,25 +58,18 @@ def get_path_to_excel_file_in_folder(folder_path):
     excel_files = [file for file in files if re.match(r'.*\.xlsx?$', file, re.IGNORECASE)]
 
     if not excel_files:
-        raise FileNotFoundError("No Excel files found in the folder.")
+        raise FileNotFoundError(f'No Excel file found in the folder "{folder_path}"')
 
-    # print Excel files with numbers for the user to select
-    for i, file in enumerate(excel_files, 1):
-        print(f"[{i}] {file}")
-
-    while True:
-        choice = input("Enter the number of the file to open (or 'x' to exit): ")
-        if choice.lower() == 'x':
-            print("Exiting...")
-            exit()
-        if choice.isdigit():
-            index = int(choice)
-            if 1 <= index <= len(excel_files):
-                selected_file = excel_files[index - 1]
-                full_path = os.path.join(folder_path, selected_file)
-                return rf"{full_path}"  # return full path as a raw string
-        else:
-            print("Invalid input. Please enter a valid number or 'x' to exit.")
+    # get user to make a selection
+    header_msg = 'Available Excel files'
+    select_msg = 'Enter the number of the file to open'
+    user_selection = console.get_user_selection(excel_files, header_msg=header_msg, select_msg=select_msg)
+    # get the file name user selected
+    selected_file = excel_files[user_selection]
+    # build a path to the file
+    full_path = os.path.join(folder_path, selected_file)
+    # return full path as a raw string
+    return rf"{full_path}"
 
 
 def get_path_to_outputs_folder():

@@ -1,5 +1,9 @@
 # manage file data
 
+import console
+import pandas as pd
+
+
 def read_excel_file_data(file_path):
     """
     Read an Excel file and return its contents as a DataFrame if the file has only one tab.
@@ -21,51 +25,36 @@ def read_excel_file_data(file_path):
         print(data_frame.head())  # Just an example to show the first few rows of the DataFrame
     """
 
-    import pandas as pd
+    print()
+    print('Reading excel file...')
 
+    # Open the Excel file
     try:
-        # Open the Excel file
         xls = pd.ExcelFile(file_path, engine='openpyxl')
-
-        # Check the number of tabs
-        sheet_names = xls.sheet_names
-        if len(sheet_names) == 1:
-            # Read the data from the Excel file directly if there's only one tab
-            df = pd.read_excel(xls, sheet_names[0])
-            print(f'Read of one tab Excel file successful.')
-            print(f'Read {df.shape[0]} rows and {df.shape[1]} columns')
-            # Clearing the DataFrame header
-            df.columns = [''] * len(df.columns)
-            return df
-        elif len(sheet_names) > 1:
-            # Print the available tables and prompt the user to select one
-            print("Available Tables:")
-            for i, sheet_name in enumerate(sheet_names, 1):
-                print(f"{i}. {sheet_name}")
-
-            while True:
-                user_input = input("Enter the number of the table you want to select (or 'x' to exit): ")
-
-                if user_input.lower() == 'x':
-                    print("Exiting...")
-                    exit()
-
-                try:
-                    selected_table_index = int(user_input) - 1
-                    if selected_table_index < 0 or selected_table_index >= len(sheet_names):
-                        raise ValueError("Invalid table number.")
-                    selected_sheet_name = sheet_names[selected_table_index]
-                    df = pd.read_excel(xls, selected_sheet_name, header=None)
-                    print(f'Selected table: {selected_sheet_name}')
-                    print(f'Read {df.shape[0]} rows and {df.shape[1]} columns')
-                    # Clearing the DataFrame header
-                    # df.columns = [''] * len(df.columns)
-                    return df
-                except ValueError:
-                    print("Invalid input. Please enter a valid table number or 'x' to exit.")
-        else:
-            raise ValueError("The Excel file is empty.")
     except Exception as e:
-        print("Excel file read failed. Error:", e)
-        print("File may be open. Please close it and retry")
-        exit()
+        raise FileExistsError(f'Excel file read from "{file_path}" FAILED.', e)
+
+    print(f'Read of excel file from "{file_path}" successful.')
+
+    # Check the number of tabs
+    sheet_names = xls.sheet_names
+
+    # Get which tab to read
+    header_msg = 'available excel sheets'
+    select_msg = 'Enter the number of the sheet to make a selection'
+    user_selection = console.get_user_selection(sheet_names, header_msg=header_msg, select_msg=select_msg)
+    sheet_name = sheet_names[user_selection]
+
+    print()
+    print(f'Reading sheet... ')
+
+    # get tab as dataframe
+    try:
+        df = pd.read_excel(xls, sheet_name, header=None)
+    except Exception as e:
+        raise FileNotFoundError("Excel file read failed.")
+
+    print(f'Sheet "{sheet_name}" read successful.')
+
+
+    return df
