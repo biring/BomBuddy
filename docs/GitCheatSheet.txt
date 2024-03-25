@@ -1,0 +1,62 @@
+
+|----------- LOCAL -----------|		|-- SERVER--|			
+<Working>-<Staging>-<LocalRepo>		<RemoteRepo>	
+
+
+
+
+
+
+CREATE NEW BRANCH USING LOCAL BRANCH
+git checkout -b [new_branch_name] [specific_different_branch]
+	create a new branch using existing local branch
+
+CREATE NEW BRANCH USING 
+	
+
+
+
+SWITCH BRANCH
+ - run git log to make sure tracked file changes are commited or discarded
+ - git switch does not discard changes to tracked file
+git switch [branch-name]
+	Switch to the desired branch
+	
+
+
+RESET LOCAL BRANCH TO MATCH REMOTE BRANCH AND DISCARD LOCAL COMMITS
+git checkout <your-branch>
+	Navigate to the local branch you wish to reset.
+git fetch origin
+	Fetch the latest data from the remote repository.
+OPTIONAL: git stash
+	Save the changes you have not yet commited.
+git reset --hard origin/<your-branch>
+	Reset your branch. Local branch now matches remote branch.
+	All commits to local branch are discarded.
+git clean -f -d
+	Remove untracked files(-f), directories(-d) 
+
+RESET LOCAL BRANCH TO MATCH REMOTE BRANCH BUT PRESERVE LOCAL COMMITS
+git checkout <your-branch>
+	Navigate to the local branch you wish to reset.
+git fetch origin
+	Fetch the latest data from the remote repository.
+git merge @U
+	Merge the changes from the upstream branch (@U) into the current branch
+
+
+SAVE CHANGES YOU DONT WANT TO COMMIT
+git commit -a -m 'message'
+	Commit message so you know what you are saving
+git branch my-saved-work
+	Work is saved in the <branch> in case you want it back
+
+
+SAVE CHANGES YOU DONT WANT TO COMMIT TO REMOTE
+
+1. DO: git stash
+	Save current file/changes in a 'box' to open later
+2. DO: git clone <repo-url> <directory.
+	Create a copy of your repository. 
+	This is back you can get later
