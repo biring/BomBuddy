@@ -127,3 +127,9 @@ def rename_and_reorder_headers(df: pd.DataFrame, item_list: list) -> pd.DataFram
     df = df[order_list]
 
     return df
+
+
+def reorder_header_to_list(df: pd.DataFrame, order: list) -> pd.DataFrame:
+    # Reorder DataFrame by the provided list and drop remaining columns
+    mdf = df[order]
+    return mdf

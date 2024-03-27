@@ -1,6 +1,7 @@
 # manage file data
 
 import console
+import os
 import pandas as pd
 
 
@@ -58,3 +59,81 @@ def read_excel_file_data(file_path):
 
 
     return df
+
+
+def read_raw_excel_file_data(folder, file):
+    """
+    Read an Excel file and return its contents.
+
+    Parameters:
+        folder (str): The full path to the Excel file.
+        file (str): The file name of the Excel file.
+
+    Returns:
+        Excel file data.
+
+    Raises:
+        ValueError: If reading the file fails.
+    """
+
+    print()
+    print('Reading excel file...')
+
+    # build a path to the file
+    file_path = os.path.join(folder, file)
+    # return full path as a raw string
+    file_path = rf"{file_path}"
+
+    # Open the Excel file
+    try:
+        xls = pd.ExcelFile(file_path, engine='openpyxl')
+    except Exception as e:
+        raise FileExistsError(f'Excel file read from "{file_path}" FAILED.', e)
+
+    print(f'Read of excel file from "{file_path}" successful.')
+
+    return xls
+
+
+def get_user_selected_excel_file_sheet(xls) -> pd.DataFrame:
+
+    # get a list of sheet names
+    sheet_names = xls.sheet_names
+
+    # Get which tab to read
+    header_msg = 'available excel sheets'
+    select_msg = 'Enter the number of the sheet to make a selection'
+    user_selection = console.get_user_selection(sheet_names, header_msg=header_msg, select_msg=select_msg)
+    sheet_name = sheet_names[user_selection]
+
+    print()
+    print(f'Reading sheet... ')
+
+    # get tab as dataframe
+    try:
+        df = pd.read_excel(xls, sheet_name, header=None)
+    except Exception as e:
+        raise FileNotFoundError("Excel file read failed.")
+
+    print(f'Sheet "{sheet_name}" read successful.')
+
+    return df
+
+
+def write_single_sheet_excel_file_data(folder, file, df) -> None:
+
+    print()
+    print(f'Writing excel file... ')
+
+    file_path = os.path.join(folder, file)
+    # Good practice to make path OS independent
+    file_path = os.path.normpath(file_path)
+
+    try:
+        df.to_excel(file_path, index=True)  # Set index=False to exclude the DataFrame index from being written
+    except Exception as e:
+        raise FileExistsError(f'Excel file write to "{file_path}" FAILED.', e)
+
+    print(f'Write of excel file from "{file_path}" successful.')
+
+    return None

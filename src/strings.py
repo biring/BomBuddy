@@ -136,7 +136,7 @@ def check_ref_des_name(df: pd.DataFrame) -> pd.DataFrame:
         # Iterate through the list and make it upper case
         uppercase_list = [x.upper() for x in cleaned_list]
         # Reference designator raw_string pattern
-        pattern = r'^[A-Z].*[0-9]$'
+        pattern = r'^[A-Za-z].*[A-Za-z0-9]$'
         designator_list = []
         # check each reference designator
         for element in uppercase_list:
@@ -222,7 +222,7 @@ def check_duplicate_ref_des(df: pd.DataFrame) -> None:
         print("No duplicates found.")
 
 
-def find_best_match_levenshtein(test_string: str, reference_strings: str) -> str:
+def find_best_match_levenshtein(test_string: str, reference_strings: list) -> str:
     """
     Finds the best match for a test string from a list of reference strings based on Levenshtein distance.
 
@@ -248,8 +248,11 @@ def find_best_match_levenshtein(test_string: str, reference_strings: str) -> str
 
     # Loop through each reference string
     for ref_string in reference_strings:
+        lower_test_string = test_string.lower()
+        lower_ref_string = ref_string.lower()
         # Compute the Levenshtein distance between the test string and the current reference string
-        distance = Levenshtein.distance(test_string, ref_string)
+        distance = Levenshtein.distance(lower_test_string, lower_ref_string)
+        # print(f'{distance:2.2f} {test_string:20} {ref_string:20}')
 
         # If the distance is smaller than the current minimum distance, update the best match
         if distance < min_distance:
@@ -260,7 +263,7 @@ def find_best_match_levenshtein(test_string: str, reference_strings: str) -> str
     return best_match
 
 
-def find_best_match_jaccard(test_string: str, reference_strings: str) -> str:
+def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
     """
     Finds the best match for a test string from a list of reference strings based on Jaccard similarity.
 
@@ -284,11 +287,12 @@ def find_best_match_jaccard(test_string: str, reference_strings: str) -> str:
     # Iterate through each reference string
     for ref_string in reference_strings:
         # Compute Jaccard similarity coefficient
-        set1 = set(test_string)
-        set2 = set(ref_string)
+        set1 = set(test_string.lower())
+        set2 = set(ref_string.lower())
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
         similarity = intersection / union
+        # print(f'{similarity:2.2f} {test_string:20} {ref_string:20}')
 
         # Update best match if similarity is higher
         if similarity > max_similarity:

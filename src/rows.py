@@ -1,3 +1,4 @@
+import strings
 import pandas as pd
 
 
@@ -30,12 +31,6 @@ def remove_rows_containing_string(original_df, header_index, reference_string_li
         # only add row if the string to check is not in the reference string list
         if not match:
             updated_df.loc[len(updated_df)] = row
-
-    # message for how many rows changed
-    original_row_count = original_df.shape[0]
-    updated_row_count = updated_df.shape[0]
-    print(f"Number of rows reduced from {original_row_count} to {updated_row_count}"
-          f" during '{original_df.columns[header_index].lower()}' column cleanup")
 
     return updated_df
 
@@ -72,7 +67,7 @@ def merge_row_data_when_no_found(df, source_column, destination_column):
 def get_build_name_and_index_dict(data_frame: pd.DataFrame) -> dict:
     import re
     # start with empty dict
-    buildNameDict = {}
+    build_name_dict = {}
 
     # Pattern 1: Match strings that consist only 1 to 3 alphabets
     pattern1 = r'^[a-zA-Z]{1,2}$'
@@ -92,14 +87,14 @@ def get_build_name_and_index_dict(data_frame: pd.DataFrame) -> dict:
         # when a build number is found
         if re.match(pattern, str(value)):
             # add it to the dictionary
-            buildNameDict[value] = index
+            build_name_dict[value] = index
 
     # when dictionary is empty stop the application
-    if len(buildNameDict) == 0:
+    if len(build_name_dict) == 0:
         print("Error. No build name found")
         exit()
 
-    return buildNameDict
+    return build_name_dict
 
 
 def delete_empty_zero_rows(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
@@ -134,3 +129,54 @@ def duplicate_row_for_multiple_quantity(df: pd.DataFrame) -> pd.DataFrame:
 
     return mdf
 
+
+def normalize_component_name(df: pd.DataFrame, component_dict: dict, component_column: int) -> pd.DataFrame:
+
+    # Create an empty DataFrame to store the updated rows
+    updated_df = pd.DataFrame(columns=df.columns)
+
+    # Get one row at a time
+    count = 0
+    for _, row in df.iterrows():
+        # Get component type
+        component_type_name = row.iloc[component_column]
+        # Get the key list
+        keys_list = list(component_dict.keys())
+        # Get the best matched key using different methods
+        key_match_1 = strings.find_best_match_jaccard(component_type_name, keys_list)
+        key_match_2 = strings.find_best_match_levenshtein(component_type_name, keys_list)
+
+        # When all the methods give the same result
+        if key_match_1 == key_match_2:
+            # Get the value of the matched key
+            value_match = component_dict[key_match_1]
+            # replace the component type name in the row
+            row.iloc[component_column] = value_match
+            # for debug keep track of number of items changed
+            count += 1
+
+        # add row to updated data frame
+        updated_df.loc[len(updated_df)] = row
+
+    # message for how many rows changed
+    print(f"{count} rows updated")
+
+    return updated_df
+
+
+def delete_row_when_element_zero(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+    # Delete rows with zero values in the specified column
+    mdf = df[df[column_name] != 0]
+    return mdf
+
+
+def delete_row_less_than_threshold(df: pd.DataFrame, column: str, threshold: int) -> pd.DataFrame:
+    # Delete rows with zero values in the specified column
+    mdf = df[df[column] >= threshold]
+    return mdf
+
+
+def delete_row_when_element_empty(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+    # Delete rows with empty values in the specified column
+    mdf = df.dropna(subset=[column_name])
+    return mdf

@@ -3,17 +3,65 @@
 <Working>-<Staging>-<LocalRepo>		<RemoteRepo>	
 
 
+COMMIT CHANGES TO REMOTE
+git diff
+	See the changes made to the code
+	This helps to create a list of commit message by file
+git status
+	List of files that have been modified
+git add <file-name>
+	Add files to staging area one at a time
+	OR "-A" to add all files to the staging area	
+git commit -m "MessageLine1" -m"messageLine2" ....
+	Add commit message
+git pull origin master
+	Make sure you are working of the latest version of the master
+	Other developers may have made changes 
+git push origin <branch>
+	Push changes to remote repository
+git log --online -5
+	Verify commit and hash is good
+git status
+	Verify branch is upto date
 
+FEATURE DEVELOPMENT - CREATE NEW LOCAL BRANCH
+git branch <feature_branch>
+	Create a new feature branch
+git branch -a
+	Verify new branch is created
+git checkout <feature_branch>
+	Start working on the new feature
+git push origin <feature_branch>
+	Pushed new to remote when done
+	This allows for server unit testing
+git branch -a
+	Verify feature branch is in the remote repository
 
+FEATURE DEVELOPMENT - MERGE FEATURE TO MASTER AND PUSH TO REMOTE
+git checkout master
+	Switch to master branch
+git pull origin master
+	Make sure you are working of the latest code as other developers may have made changes
+git branch --merged
+	Check merge status
+git merge <feature_branch>
+	Merge feature to master
+git push origin master
+	Push to master branch in the remote 
 
-
-CREATE NEW BRANCH USING LOCAL BRANCH
-git checkout -b [new_branch_name] [specific_different_branch]
-	create a new branch using existing local branch
-
-CREATE NEW BRANCH USING 
-	
-
+FEATURE DEVELOPMENT - DELETE FEATURE BRANCH
+* switch to master branch. And status is up-to-date. No changes pending.
+git branch --merged
+	Verify feature is merged to master
+git branch -d <feature_branch>
+	Delete local feature branch
+git branch -a
+	Verify feature branch is deleted on the local repo.
+	Remote repo should still show the feature branch
+git push origin --delete <feature_branch>
+	Delete feature branch from remote repository
+git branch -a
+	Verify feature branch is deleted on the remote repo.
 
 
 SWITCH BRANCH

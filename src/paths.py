@@ -35,6 +35,10 @@ def get_path_to_input_file_folder():
     # Good practice to make path OS independent
     path = os.path.normpath(path)  # Normalize the path to ensure consistency across different operating systems
 
+    # Ensure that the folder exists, if not, create it
+    if not os.path.exists(path):
+        os.makedirs(path)
+
     return path
 
 
@@ -105,3 +109,35 @@ def get_path_to_outputs_folder():
     path = os.path.normpath(path)  # Normalize the path to ensure consistency across different operating systems
 
     return path
+
+
+def get_selected_excel_file_name(folder_path):
+    """
+    Prompts the user to select an Excel file from the specified folder.
+
+    Args:
+    - folder_path (str): The path to the folder containing the Excel files.
+
+    Returns:
+    - str: The selected Excel file name.
+
+    Raises:
+    - FileNotFoundError: If no Excel files are found in the specified folder.
+    """
+    # get the list of files in the folder
+    files = os.listdir(folder_path)
+
+    # filter only Excel files
+    excel_files = [file for file in files if re.match(r'.*\.xlsx?$', file, re.IGNORECASE)]
+
+    if not excel_files:
+        raise FileNotFoundError(f'No Excel file found in the folder "{folder_path}"')
+
+    # get user to make a selection
+    header_msg = 'Available Excel files'
+    select_msg = 'Enter the number of the file to open'
+    user_selection = console.get_user_selection(excel_files, header_msg=header_msg, select_msg=select_msg)
+    # get the file name user selected
+    selected_file = excel_files[user_selection]
+
+    return selected_file
