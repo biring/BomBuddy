@@ -61,6 +61,8 @@ component_dict = {
     "SMD FRD": "Diode",
     "Heat Shrink Tubing": "Heat Shrink",
     "Heat Sink":"Heat Sink",
+    "Rectifier": "Diode",
+    "SMD Rectifier": "Diode",
     "IR Receiver": "Diode",
     "Lens": "Lens",
     "MOS": "Transistor",
@@ -78,12 +80,23 @@ component_dict = {
 }
 
 # List of strings to determine which rows to delete based on string match with description header
-unwanted_ebom_description_string_list = ["Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
+unwanted_stella_ebom_description_string_list = [
+    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
+
+# List of strings to determine which rows to delete based on string match with description header
+unwanted_stella_cbom_description_string_list = [
+    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
+
 
 # List of strings to determine which rows to delete based on string match with component type
-unwanted_ebom_component_type_string_list = ["PCB", "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
+unwanted_stella_ebom_component_type_string_list = [
+    "PCB", "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
 
-cost_walk_header_list = [
+# List of strings to determine which rows to delete based on string match with component type
+unwanted_stella_cbom_component_type_string_list = [
+    "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
+
+cost_walk_header_dict = [
     ['Designator', True, 'Designator'],
     ['Component', True, 'Component'],
     ['Type', True, 'Type'],
@@ -95,13 +108,12 @@ cost_walk_header_list = [
 ]
 
 
-def drop_rows_above_string_match(df, string):
+def drop_rows_above_bom_header(df: pd.DataFrame) -> pd.DataFrame:
     """
     Drops rows above the row containing an element that matches the specified string.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        string (str): The string to match.
 
     Returns:
         pandas.DataFrame: The modified DataFrame with rows dropped.
@@ -109,30 +121,28 @@ def drop_rows_above_string_match(df, string):
 
     # user interface message
     print()
-    print("Finding bom header... ")
+    print("Search for bom header row... ")
 
-    # Flag to indicate if a match has been found
-    found_match = False
-    rows_removed = 0
+    # local variables
+    header_row = -1
+    search_str = 'Critical Component'
 
     # Iterate over rows of the DataFrame
     for index, row in df.iterrows():
         # Check if the string is present in any cell of the current row
-        if string in row.values:
-            found_match = True
-            rows_removed = index
+        if search_str in row.values:
+            header_row = index
             break
 
-    # If no match is found, print a message and exit
-    if not found_match:
-        print("No row matches the provided string.")
-        exit()
+    # If no match is found, raise an error
+    if header_row < 0:
+        raise ValueError("Header row not found.")
 
     # Print message indicating the number of rows removed above the match
-    print(f'Bom header data found in row {rows_removed + 1}.')
+    print(f'Bom header data found in row {header_row + 1}.')
 
     # Drop rows above the row containing the match
-    df.drop(index=df.index[:rows_removed], inplace=True)
+    df.drop(index=df.index[:header_row], inplace=True)
 
     # Reset the row index
     df = df.reset_index(drop=True)
@@ -691,10 +701,10 @@ def reorder_column_headers_for_cost_walk(df: pd.DataFrame) -> pd.DataFrame:
 
 def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
 
-    mdf = columns.rename_and_reorder_headers(df, cost_walk_header_list)
+    mdf = columns.rename_and_reorder_headers(df, cost_walk_header_dict)
 
     header_order_list = []
-    for item in cost_walk_header_list:
+    for item in cost_walk_header_dict:
         header_name = item[2]
         header_order_list.append(header_name)
     mdf = columns.reorder_header_to_list(mdf, header_order_list)
@@ -704,6 +714,7 @@ def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def extract_cbom_template_columns(df: pd.DataFrame) -> pd.DataFrame:
     header_list = [
+        ['Item', True, 'Item'],
         ['Component', True, 'Component'],
         ['Description', True, 'Description'],
         ['Type', True, 'Type'],
@@ -795,6 +806,9 @@ def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
     df['Manufacturer'] = df['Manufacturer'].str.lstrip(' ')
     df['Manufacturer'] = df['Manufacturer'].str.rstrip(' ')
 
+    # replace new line character by comma
+    df['Manufacturer'] = df['Manufacturer'].str.replace(r'\n', ',', regex=True)
+
     # remove duplicate spaces
     df['Manufacturer'] = df['Manufacturer'].str.replace(r'\s+', ' ', regex=True)
 
@@ -802,8 +816,20 @@ def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def cleanup_part_number(df: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Cleaning up part number column data... ')
 
-def drop_unwanted_ebom_description_items(df):
+    # replace new line character by comma
+    df['Manufacturer P/N'] = df['Manufacturer P/N'].str.replace(r'\n', ',', regex=True)
+
+    print('Done.')
+
+    return df
+
+
+def drop_unwanted_stella_ebom_description_items(df):
     # message
     print()
     print('Removing unwanted eBOM description items... ')
@@ -812,7 +838,24 @@ def drop_unwanted_ebom_description_items(df):
     description_index = columns.get_single_header_index(df, 'Description', True)
 
     # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, description_index, unwanted_ebom_description_string_list)
+    mdf = rows.remove_rows_containing_string(df, description_index, unwanted_stella_ebom_description_string_list)
+
+    # user interface message
+    print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
+
+    return mdf
+
+
+def drop_unwanted_stella_cbom_description_items(df):
+    # message
+    print()
+    print('Removing unwanted cBOM description items... ')
+
+    # Get the index of description column
+    description_index = columns.get_single_header_index(df, 'Description', True)
+
+    # Remove unwanted description rows
+    mdf = rows.remove_rows_containing_string(df, description_index, unwanted_stella_cbom_description_string_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -829,13 +872,28 @@ def drop_unwanted_ebom_component_type_items(df):
     component_index = columns.get_single_header_index(df, 'Component', True)
 
     # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, component_index, unwanted_ebom_component_type_string_list)
+    mdf = rows.remove_rows_containing_string(df, component_index, unwanted_stella_ebom_component_type_string_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
 
     return mdf
 
+def drop_unwanted_cbom_component_type_items(df):
+    # message
+    print()
+    print('Removing unwanted cBOM component type items... ')
+
+    # Get the index of component column
+    component_index = columns.get_single_header_index(df, 'Component', True)
+
+    # Remove unwanted description rows
+    mdf = rows.remove_rows_containing_string(df, component_index, unwanted_stella_cbom_component_type_string_list)
+
+    # user interface message
+    print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
+
+    return mdf
 
 def remove_zero_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
     # user interface message
