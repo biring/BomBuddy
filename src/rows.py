@@ -2,7 +2,7 @@ import strings
 import pandas as pd
 
 
-def remove_rows_containing_string(original_df, header_index, reference_string_list):
+def delete_row_when_element_contains_string(original_df, header_index, reference_string_list):
     """
     Removes rows from the DataFrame that contain specified strings in a given column.
 
@@ -64,13 +64,13 @@ def merge_row_data_when_no_found(df, source_column, destination_column):
     return updated_df
 
 
-def get_build_name_and_index_dict(data_frame: pd.DataFrame) -> dict:
+def get_build_name_and_column(data_frame: pd.DataFrame) -> dict:
     import re
     # start with empty dict
     build_name_dict = {}
 
-    # Pattern 1: Match strings that consist only 1 to 3 alphabets
-    pattern1 = r'^[a-zA-Z]{1,2}$'
+    # Pattern 1: Match strings that consist 1 to 3 alphabets
+    pattern1 = r'^[a-zA-Z]{1,3}$'
     # Pattern 2: Match strings that start with an alphabet and end with an integer
     pattern2 = r'^[a-zA-Z].*\d$'
     # Pattern 3: Match strings that start with an alphabet, end with a decimal number,
@@ -82,17 +82,22 @@ def get_build_name_and_index_dict(data_frame: pd.DataFrame) -> dict:
     # build name information is found in the top row
     top_row = data_frame.iloc[0]
 
-    # iterate through each column to find the build name and index
+    # build a dictionary with build names
     for index, value in enumerate(top_row):
-        # when a build number is found
+        # ignore pandas NaN
+        if pd.isna(value):
+            continue
+        # build name must match the pattern defined above
         if re.match(pattern, str(value)):
-            # add it to the dictionary
+            # raise an error when duplicate build name is detected.
+            if value in build_name_dict:
+                raise ValueError(f"Found duplicate '{value}' value for build name."
+                                 f"\nPlease fix data in source file and retry.")
             build_name_dict[value] = index
 
-    # when dictionary is empty stop the application
+    # raise an error when no build names are found.
     if len(build_name_dict) == 0:
-        print("Error. No build name found")
-        exit()
+        raise ValueError("No build name found.")
 
     return build_name_dict
 
@@ -130,7 +135,7 @@ def duplicate_row_for_multiple_quantity(df: pd.DataFrame) -> pd.DataFrame:
     return mdf
 
 
-def normalize_component_name(df: pd.DataFrame, component_dict: dict, component_column: int) -> pd.DataFrame:
+def standardize_component_name(df: pd.DataFrame, component_dict: dict, component_column: int) -> pd.DataFrame:
 
     # Create an empty DataFrame to store the updated rows
     updated_df = pd.DataFrame(columns=df.columns)
@@ -170,13 +175,13 @@ def delete_row_when_element_zero(df: pd.DataFrame, column_name: str) -> pd.DataF
     return mdf
 
 
-def delete_row_less_than_threshold(df: pd.DataFrame, column: str, threshold: int) -> pd.DataFrame:
+def delete_row_when_element_less_than_threshold(df: pd.DataFrame, column: str, threshold: int) -> pd.DataFrame:
     # Delete rows with zero values in the specified column
     mdf = df[df[column] >= threshold]
     return mdf
 
 
-def delete_row_when_element_empty(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+def delete_row_with_empty_element(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     # Delete rows with empty values in the specified column
     mdf = df.dropna(subset=[column_name])
     return mdf

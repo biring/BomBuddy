@@ -55,12 +55,11 @@ def refactor_string_if_matched(df, pattern_column, data_column):
                 .replace("," + pattern, "").replace(", " + pattern, "")\
                 .replace(pattern, "")
 
-
             # when data has been updated
             if result != data:
-                # for debug keep track of number of items changd
+                # for debug keep track of number of items changed
                 count += 1
-                # print(f'In row {index} found {pattern} in {data} so changed it to {result}')
+                # print(f"In row {index} found {pattern} in {data} so changed it to {result}")
                 # replace the data string
                 df.at[index, df.columns[data_column]] = result
 
@@ -70,7 +69,7 @@ def refactor_string_if_matched(df, pattern_column, data_column):
     return df
 
 
-def remove_unwanted_build_cost_data(df: pd.DataFrame, build_dict: dict) -> pd.DataFrame:
+def delete_columns_with_unwanted_build_data(df: pd.DataFrame, build_dict: dict) -> pd.DataFrame:
 
     # Get the value associated with the first key
     first_key = list(build_dict.keys())[0]

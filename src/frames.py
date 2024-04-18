@@ -1,8 +1,32 @@
 # This file has functions to manipulate both rows and columns in a data frame
 import pandas as pd
 
+import header
 import columns
 import rows
+
+# Standardized header names used across eBOM, cBOM and cost walk. They are based off the bom template
+itemHdr = "Item"
+componentHdr = "Component"
+descriptionHdr = "Description"
+typeHdr = "Type"
+criticalHdr = "Critical Component"
+manufacturerHdr = "Manufacturer"
+partNoHdr = "Manufacturer P/N"
+qtyHdr = "Qty"
+designatorHdr = "Designator"
+unitPriceHdr = "U/P RMB W/O VAT"
+featureHdr = "Feature"
+boardHdr = "Board"
+
+# strings to look for when searching for the bom header
+header_search_string_list = [designatorHdr, manufacturerHdr, qtyHdr]
+
+cost_walk_header_list = [itemHdr, designatorHdr, componentHdr, typeHdr, descriptionHdr,
+                         manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+
+bom_header_list = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
+                   criticalHdr, manufacturerHdr, partNoHdr, typeHdr, unitPriceHdr]
 
 # Dictionary of component type reference strings and normalized stella component type names
 component_dict = {
@@ -60,13 +84,13 @@ component_dict = {
     "FRD": "Diode",
     "SMD FRD": "Diode",
     "Heat Shrink Tubing": "Heat Shrink",
-    "Heat Sink":"Heat Sink",
+    "Heat Sink": "Heat Sink",
     "Rectifier": "Diode",
     "SMD Rectifier": "Diode",
     "IR Receiver": "Diode",
     "Lens": "Lens",
     "MOS": "Transistor",
-    "Operational amplifier" :"IC",
+    "Operational amplifier": "IC",
     "PCB Tab": "Connector",
     "Quick fit terminal": "Connector",
     "Screw": "Screw",
@@ -80,37 +104,25 @@ component_dict = {
 }
 
 # List of strings to determine which rows to delete based on string match with description header
-unwanted_stella_ebom_description_string_list = [
+unwanted_db_ebom_description_list = [
     "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
 
 # List of strings to determine which rows to delete based on string match with description header
-unwanted_stella_cbom_description_string_list = [
+unwanted_db_cbom_description_list = [
     "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
 
-
 # List of strings to determine which rows to delete based on string match with component type
-unwanted_stella_ebom_component_type_string_list = [
+unwanted_db_ebom_component_list = [
     "PCB", "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
 
 # List of strings to determine which rows to delete based on string match with component type
-unwanted_stella_cbom_component_type_string_list = [
+unwanted_db_cbom_component_list = [
     "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
 
-cost_walk_header_dict = [
-    ['Designator', True, 'Designator'],
-    ['Component', True, 'Component'],
-    ['Type', True, 'Type'],
-    ['Description', True, 'Description'],
-    ['Manufacturer', True, 'Manufacturer'],
-    ['Manufacturer P/N', True, 'Manufacturer P/N'],
-    ['Qty', True, 'Qty'],
-    ['U/P ', False, 'U/P']
-]
 
-
-def drop_rows_above_bom_header(df: pd.DataFrame) -> pd.DataFrame:
+def search_and_set_bom_header(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Drops rows above the row containing an element that matches the specified string.
+    Search and set header for bom.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
@@ -121,35 +133,27 @@ def drop_rows_above_bom_header(df: pd.DataFrame) -> pd.DataFrame:
 
     # user interface message
     print()
-    print("Search for bom header row... ")
+    print("Searching for bom header row... ")
 
-    # local variables
-    header_row = -1
-    search_str = 'Critical Component'
+    # search for header row
+    header_row = header.search_row_matching_header(df, header_search_string_list)
 
-    # Iterate over rows of the DataFrame
-    for index, row in df.iterrows():
-        # Check if the string is present in any cell of the current row
-        if search_str in row.values:
-            header_row = index
-            break
-
-    # If no match is found, raise an error
-    if header_row < 0:
-        raise ValueError("Header row not found.")
-
-    # Print message indicating the number of rows removed above the match
-    print(f'Bom header data found in row {header_row + 1}.')
-
-    # Drop rows above the row containing the match
+    # drop rows above the row containing the match
     df.drop(index=df.index[:header_row], inplace=True)
 
-    # Reset the row index
+    # reset the row index
     df = df.reset_index(drop=True)
+
+    # set top row as header
+    df = header.set_top_row_as_header(df)
+
+    # user interface message
+    print(f'Bom header data found in row {header_row + 1}.')
+
     return df
 
 
-def delete_empty_rows(df):
+def delete_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Delete rows containing either NaN values or empty strings from a pandas DataFrame.
 
@@ -159,156 +163,50 @@ def delete_empty_rows(df):
     Returns:
     pandas.DataFrame: DataFrame with rows containing NaN values or empty strings removed.
     """
+
+    # user interface message
+    print()
+    print('Deleting empty rows... ')
+
     # Drop rows with all NaN values
-    df_cleaned = df.dropna(axis=0, how='all')
+    mdf = df.dropna(axis=0, how='all')
 
     # Drop rows with all empty strings
-    df_cleaned = df_cleaned.replace('', pd.NA).dropna(axis=0, how='all')
+    mdf = mdf.replace('', pd.NA).dropna(axis=0, how='all')
 
-    return df_cleaned
+    rows_before = df.shape[0]
+    rows_after = mdf.shape[0]
+    print(f"Number of rows reduced from {rows_before} to {rows_after}")
+
+    return mdf
 
 
-def delete_empty_rows_columns(dataframe):
+def delete_empty_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Delete rows or columns containing only NaN values and/or empty strings.
+    Delete columns containing either NaN values or empty strings from a pandas DataFrame.
 
     Parameters:
-    dataframe (pandas.DataFrame): Input DataFrame.
+    dataframe (pandas.DataFrame): The DataFrame from which to delete empty columns.
 
     Returns:
-    pandas.DataFrame: DataFrame with empty rows or columns removed.
+    pandas.DataFrame: DataFrame with columns containing NaN values or empty strings removed.
     """
     # message
     print()
-    print('Deleting empty rows and columns... ')
+    print('Deleting empty columns... ')
 
-    # Count empty rows before deletion
-    empty_rows_before = dataframe.shape[0] - dataframe.dropna(how='all').shape[0]
+    # Drop columns with all NaN values
+    mdf = df.dropna(axis=1, how='all')
 
-    # Count empty columns before deletion
-    empty_columns_before = dataframe.shape[1] - dataframe.dropna(how='all', axis=1).shape[1]
-
-    # Remove empty rows
-    dataframe = dataframe.replace('', float('nan')).dropna(how='all', axis=0)
-
-    # Remove empty columns
-    dataframe = dataframe.replace('', float('nan')).dropna(how='all', axis=1)
-
-    # Count empty rows after deletion
-    empty_rows_after = dataframe.shape[0] - dataframe.dropna(how='all').shape[0]
-
-    # Count empty columns after deletion
-    empty_columns_after = dataframe.shape[1] - dataframe.dropna(how='all', axis=1).shape[1]
+    # Drop columns with all empty strings
+    mdf = mdf.replace('', pd.NA).dropna(axis=1, how='all')
 
     # user interface message
-    print(f"Number of rows reduced from {empty_rows_before} to {empty_rows_after}")
-    print(f"Number of columns reduced from {empty_columns_before} to {empty_columns_after}")
+    columns_before = df.shape[1]
+    columns_after = mdf.shape[1]
+    print(f"Number of columns reduced from {columns_before} to {columns_after}")
 
-    return dataframe
-
-
-def set_top_row_as_header(df):
-    """
-    Takes the top row of a DataFrame and sets it as the header.
-    Removes the top row from the DataFrame after setting it as the header.
-
-    Args:
-    - df (pandas.DataFrame): The DataFrame containing tabular data.
-
-    Returns:
-    - pandas.DataFrame: The modified DataFrame with the header set and the top row removed.
-    """
-    header = df.iloc[0].astype(str)  # Extract the top row as header and ensure it is string type
-    modified_df = df.iloc[1:].reset_index(drop=True)  # Remove the top row and reset index
-    modified_df.columns = header  # Set the header
-
-    return modified_df
-
-
-def drop_rows_below_threshold_for_column(df, reference_string, threshold):
-    """
-    Drop rows from a DataFrame where the value in a column determined by the specified string in the header
-    is below a certain threshold.
-
-    Parameters:
-    - df (pandas DataFrame): The DataFrame from which rows will be dropped.
-    - reference_string (str): The string in the header used to determine the column.
-    - threshold (int or float): The threshold value. Rows with values below this threshold will be dropped.
-
-    Returns:
-    - df_dropped (pandas DataFrame): DataFrame with rows dropped where the specified column's value is < than threshold.
-    """
-
-    # user interface message
-    print()
-    print(f'Removing rows with quantity less than {threshold}')
-
-    # Get the index of component column
-    column_index = columns.get_single_header_index(df, reference_string, True)
-
-    # Create a mask to identify rows where the value is less than the threshold
-    mask = (df.iloc[1:, column_index].astype(float) < threshold)
-
-    # Count the number of rows to be dropped
-    count_dropped = mask.sum()
-
-    if count_dropped > 0:
-        # Apply the mask and drop rows
-        mdf = df.loc[~mask]
-    else:
-        # No rows to drop, return the original DataFrame
-        mdf = df
-
-    # user interface message
-    print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
-
-    return mdf
-
-
-def keep_partial_matched_columns(df, strings):
-    """
-    Keep columns in DataFrame `df` that partially match any string in `strings`.
-
-    Parameters:
-        df (pandas.DataFrame): The input DataFrame.
-        strings (list): List of strings to match against DataFrame columns.
-
-    Returns:
-        pandas.DataFrame: DataFrame with only the columns that partially match.
-
-    Raises:
-        ValueError: If the number of matched columns is less than the length of the list `strings`.
-
-    Example usage:
-        Assuming you have a DataFrame called `data` and a list of strings called `match_strings`
-        filtered_data = keep_partial_matched_columns(data, match_strings)
-    """
-
-    # user interface message
-    print()
-    print('Removing unwanted columns of data...')
-
-    # Convert the list of strings to lowercase
-    strings = [s.lower() for s in strings]
-
-    # Get columns that partially match with any string in the list
-    matching_columns = [col for col in df.columns if any(s in col.lower() for s in strings)]
-
-    if len(matching_columns) < len(strings):
-        raise ValueError("Number of matched columns is less than the length of the list 'strings'.")
-
-    # only keep the partially matched columns
-    mdf = df[matching_columns]
-
-    # user interface message
-
-    # print column headers
-    print(f"Number of columns reduced from {df.shape[1]} to {mdf.shape[1]}")
-    header_text = ', '.join(mdf.columns)
-    print(f'Headers are = {header_text}')
-
-    # Return DataFrame with matching columns
-    return mdf
+    return df
 
 
 def split_manufacturers_to_separate_rows(original_df):
@@ -544,7 +442,7 @@ def drop_rows_with_unwanted_ebom_items(df):
     description_index = columns.get_single_header_index(df, 'Description', True)
 
     # Remove unwanted description rows
-    updated_df = rows.remove_rows_containing_string(df, description_index, unwanted_description_strings_list)
+    updated_df = rows.delete_row_when_element_contains_string(df, description_index, unwanted_description_strings_list)
 
     # List of strings to determine which rows to delete based on string match with component header
     unwanted_component_strings_list = ["PCB", "Wire"]
@@ -553,7 +451,8 @@ def drop_rows_with_unwanted_ebom_items(df):
     component_index = columns.get_single_header_index(updated_df, 'Component', True)
 
     # Remove unwanted description rows
-    updated_df = rows.remove_rows_containing_string(updated_df, component_index, unwanted_component_strings_list)
+    updated_df = rows.delete_row_when_element_contains_string(updated_df,
+                                                              component_index, unwanted_component_strings_list)
 
     return updated_df
 
@@ -597,62 +496,15 @@ def merge_type_data_with_description(df):
     return df
 
 
-def remove_unwanted_build_cost_data(df: pd.DataFrame) -> pd.DataFrame:
+def select_build(df: pd.DataFrame) -> pd.DataFrame:
+
     # get all the build names for which data is available in the dataframe
-    build_name_dict = rows.get_build_name_and_index_dict(df)
-    # only keep cost data from one build
-    df = columns.remove_unwanted_build_cost_data(df, build_name_dict)
+    build_dict = rows.get_build_name_and_column(df)
+
+    # delete column when it has unwanted build data
+    df = columns.delete_columns_with_unwanted_build_data(df, build_dict)
 
     return df
-
-
-def remove_zero_and_empty_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
-    # user interface message
-    print()
-    print('Removing rows with empty or zero quantity')
-
-    # keep tack of total rows before clean up
-    original_row_count = data_frame.shape[0]
-
-    # Delete zero or empty quantity rows
-    data_frame = rows.delete_empty_zero_rows(data_frame, 'Qty')
-
-    # user interface message
-    updated_row_count = data_frame.shape[0]
-    print(f"Number of rows reduced from {original_row_count} to {updated_row_count}")
-
-    return data_frame
-
-
-def reformat_cbom_ref_des(data_frame: pd.DataFrame) -> pd.DataFrame:
-    # user interface message
-    print()
-    print('Cleaning up reference designators names... ')
-
-    # ref des should be uppercase
-    data_frame['Designator'] = data_frame['Designator'].str.upper()
-
-    # ref des are separated by comma
-    data_frame['Designator'] = data_frame['Designator'].str.replace(':', ',')
-    data_frame['Designator'] = data_frame['Designator'].str.replace(';', ',')
-    data_frame['Designator'] = data_frame['Designator'].str.replace('、', ',')
-    data_frame['Designator'] = data_frame['Designator'].str.replace('，', ',')
-
-    # remove white space
-    data_frame['Designator'] = data_frame['Designator'].str.replace(' ', '')
-
-    # special case - invalid names with '-' replace with 'X'
-    data_frame['Designator'] = data_frame['Designator'].str.replace('-', 'X')
-    # special case -
-    data_frame['Designator'] = data_frame['Designator'].str.replace('FOR', 'WIRE')
-    # remove starting and trailing comma
-    data_frame['Designator'] = data_frame['Designator'].str.lstrip(',')
-    data_frame['Designator'] = data_frame['Designator'].str.rstrip(',')
-
-    # user interface message
-    print('Done')
-
-    return data_frame
 
 
 def split_multiple_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
@@ -676,94 +528,70 @@ def split_multiple_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
 def reorder_header_to_ebom_template(df: pd.DataFrame) -> pd.DataFrame:
     ebom_header_order_list = [
         'Component', 'Description', 'Qty', 'Designator',
-        'Critical Component', 'Manufacturer','Manufacturer P/N']
+        'Critical Component', 'Manufacturer', 'Manufacturer P/N']
 
     mdf = columns.reorder_header_to_list(df, ebom_header_order_list)
 
     return mdf
 
 
-def reorder_column_headers_for_cost_walk(df: pd.DataFrame) -> pd.DataFrame:
-    header_list = [
-        ['Designator', True, 'Designator'],
-        ['Component', True, 'Component'],
-        ['Description', True, 'Description'],
-        ['Manufacturer', True, 'Manufacturer'],
-        ['Manufacturer P/N', True, 'Manufacturer P/N'],
-        ['Qty', True, 'Qty'],
-        ['U/P', False, 'U/P']
-    ]
-
-    df = columns.rename_and_reorder_headers(df, header_list)
-
-    return df
-
-
 def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
 
-    mdf = columns.rename_and_reorder_headers(df, cost_walk_header_dict)
+    # user interface message
+    print()
+    print('Extracting columns for cost walk...')
 
-    header_order_list = []
-    for item in cost_walk_header_dict:
-        header_name = item[2]
-        header_order_list.append(header_name)
-    mdf = columns.reorder_header_to_list(mdf, header_order_list)
+    mdf = header.standardize_header_names(df, cost_walk_header_list)
+
+    # Reorder header based on list and drop remaining columns
+    mdf = mdf[cost_walk_header_list]
+
+    # user interface message
+    header_strings = ", ".join(mdf.columns)
+    print(f'Columns header are [{header_strings}]')
 
     return mdf
 
 
-def extract_cbom_template_columns(df: pd.DataFrame) -> pd.DataFrame:
-    header_list = [
-        ['Item', True, 'Item'],
-        ['Component', True, 'Component'],
-        ['Description', True, 'Description'],
-        ['Type', True, 'Type'],
-        ['Qty', True, 'Qty'],
-        ['Designator', True, 'Designator'],
-        ['Critical Component', True, 'Critical Component?'],
-        ['Manufacturer', True, 'Manufacturer'],
-        ['Manufacturer P/N', True, 'Manufacturer P/N'],
-        ['U/P', False, 'RMB (w/o VAT)']
-    ]
+def extract_bom_columns(df: pd.DataFrame) -> pd.DataFrame:
 
-    df = columns.rename_and_reorder_headers(df, header_list)
-
-    return df
-
-
-def normalize_cbom_component_type_label(df: pd.DataFrame) -> pd.DataFrame:
     # user interface message
     print()
-    print('Cleaning up component type column type data... ')
+    print('Extracting columns for bom...')
 
-    # Get the index of the component type column
-    component_column = columns.get_single_header_index(df, 'Component', True)
+    mdf = header.standardize_header_names(df, bom_header_list)
 
-    df = rows.normalize_component_name(df, component_dict, component_column)
+    # Reorder header based on list and drop remaining columns
+    mdf = mdf[bom_header_list]
 
-    return df
+    # user interface message
+    header_strings = ", ".join(mdf.columns)
+    print(f'Columns header are [{header_strings}]')
+
+    return mdf
 
 
 def cleanup_description(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
     print('Cleaning up description column data... ')
 
-    # remove spaces
-    df['Description'] = df['Description'].str.replace(r'\s+', '', regex=True)
-    # replace multiple commas by one comma
-    df['Description'] = df['Description'].str.replace(r',{2,}', ',', regex=True)
+    # remove duplicate spaces
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'\s+', ' ', regex=True)
     # colon and semicolon are replaced by comma
-    df['Description'] = df['Description'].str.replace(r'[:;]', ',', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[:;]', ',', regex=True)
+    # replace multiple commas by one comma
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
 
     # special 'characters' cases...
-    df['Description'] = df['Description'].str.replace(r'[，]', ',', regex=True)
-    df['Description'] = df['Description'].str.replace(r'[（]', '(', regex=True)
-    df['Description'] = df['Description'].str.replace(r'[）]', ')', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[，]', ',', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[（]', '(', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[）]', ')', regex=True)
 
     # remove starting and trailing comma
-    df['Description'] = df['Description'].str.lstrip(',')
-    df['Description'] = df['Description'].str.rstrip(',')
+    df[descriptionHdr] = df[descriptionHdr].str.lstrip(',')
+    df[descriptionHdr] = df[descriptionHdr].str.rstrip(',')
 
     print('Done.')
 
@@ -771,74 +599,83 @@ def cleanup_description(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_designators(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
     print('Cleaning up designator column data... ')
 
-    # replace multiple commas by one comma
-    df['Description'] = df['Description'].str.replace(r',{2,}', ',', regex=True)
-    # remove colon, semicolon, underscore, plus, minus by nothing
-    df['Description'] = df['Description'].str.replace(r'[:;_+-]', '', regex=True)
+    # replace colon and semicolon by comma
+    df[designatorHdr] = df[designatorHdr].str.replace(r'[:;]', ',', regex=True)
 
     # remove starting and trailing comma
-    df['Description'] = df['Description'].str.lstrip(',')
-    df['Description'] = df['Description'].str.rstrip(',')
+    df[designatorHdr] = df[designatorHdr].str.lstrip(',')
+    df[designatorHdr] = df[designatorHdr].str.rstrip(',')
 
     # remove duplicate spaces
-    df['Description'] = df['Description'].str.replace(r'\s+', '', regex=True)
-
+    df[designatorHdr] = df[designatorHdr].str.replace(r'\s+', ' ', regex=True)
+    # replace duplicate commas by one comma
+    df[designatorHdr] = df[designatorHdr].str.replace(r',{2,}', ',', regex=True)
     print('Done.')
 
     return df
 
 
 def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
     print('Cleaning up manufacturer column data... ')
 
-    # replace ".," with space
-    df['Manufacturer'] = df['Manufacturer'].str.replace(r'.,', ' ', regex=True)
-    # replace dot with space
-    df['Manufacturer'] = df['Manufacturer'].str.replace(r'[.]', ' ', regex=True)
+    # special case when start is with MFG or Manufacturer case-insensitive
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'(?i)^MANUFACTURER', ' ', regex=True)
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'(?i)^MANU', ' ', regex=True)
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'(?i)^MFG', ' ', regex=True)
+
+    # replace ".," with space. Special case for "Co.,Ltd" to "Co Ltd"
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'.,', ' ', regex=True)
+    # replace colon and dot with space
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'[:.]', ' ', regex=True)
 
     # remove starting and trailing space
-    df['Manufacturer'] = df['Manufacturer'].str.lstrip(' ')
-    df['Manufacturer'] = df['Manufacturer'].str.rstrip(' ')
+    df[manufacturerHdr] = df[manufacturerHdr].str.lstrip(' ')
+    df[manufacturerHdr] = df[manufacturerHdr].str.rstrip(' ')
 
-    # replace new line character by comma
-    df['Manufacturer'] = df['Manufacturer'].str.replace(r'\n', ',', regex=True)
+    # elements are comma separated
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'\n', ',', regex=True)
 
     # remove duplicate spaces
-    df['Manufacturer'] = df['Manufacturer'].str.replace(r'\s+', ' ', regex=True)
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'\s+', ' ', regex=True)
 
     print('Done.')
 
     return df
 
+
 def cleanup_part_number(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
     print('Cleaning up part number column data... ')
 
-    # replace new line character by comma
-    df['Manufacturer P/N'] = df['Manufacturer P/N'].str.replace(r'\n', ',', regex=True)
+    # elements are comma separated
+    df[partNoHdr] = df[partNoHdr].str.replace(r'\n', ',', regex=True)
 
     print('Done.')
 
     return df
 
 
-def drop_unwanted_stella_ebom_description_items(df):
-    # message
+def drop_unwanted_db_ebom_description(df: pd.DataFrame) -> pd.DataFrame:
+
+    # user interface message
     print()
     print('Removing unwanted eBOM description items... ')
 
     # Get the index of description column
-    description_index = columns.get_single_header_index(df, 'Description', True)
+    description_index = columns.get_single_header_index(df, descriptionHdr, True)
 
-    # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, description_index, unwanted_stella_ebom_description_string_list)
+    # delete row when the description is prohibited for dB upload
+    mdf = rows.delete_row_when_element_contains_string(df, description_index, unwanted_db_ebom_description_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -846,16 +683,17 @@ def drop_unwanted_stella_ebom_description_items(df):
     return mdf
 
 
-def drop_unwanted_stella_cbom_description_items(df):
-    # message
+def drop_unwanted_db_cbom_description(df: pd.DataFrame) -> pd.DataFrame:
+
+    # user interface message
     print()
-    print('Removing unwanted cBOM description items... ')
+    print('Removing unwanted cbom description...')
 
     # Get the index of description column
-    description_index = columns.get_single_header_index(df, 'Description', True)
+    description_index = columns.get_single_header_index(df, descriptionHdr, True)
 
-    # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, description_index, unwanted_stella_cbom_description_string_list)
+    # delete row when the description is prohibited for dB upload
+    mdf = rows.delete_row_when_element_contains_string(df, description_index, unwanted_db_cbom_description_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -863,45 +701,50 @@ def drop_unwanted_stella_cbom_description_items(df):
     return mdf
 
 
-def drop_unwanted_ebom_component_type_items(df):
-    # message
+def drop_unwanted_db_ebom_component(df: pd.DataFrame) -> pd.DataFrame:
+
+    # user interface message
     print()
-    print('Removing unwanted eBOM component type items... ')
+    print('Removing unwanted ebom component... ')
 
     # Get the index of component column
-    component_index = columns.get_single_header_index(df, 'Component', True)
+    component_index = columns.get_single_header_index(df, componentHdr, True)
 
-    # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, component_index, unwanted_stella_ebom_component_type_string_list)
+    # delete row when the component is prohibited for dB upload
+    mdf = rows.delete_row_when_element_contains_string(df, component_index, unwanted_db_ebom_component_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
 
     return mdf
 
-def drop_unwanted_cbom_component_type_items(df):
-    # message
+
+def drop_unwanted_db_cbom_component(df: pd.DataFrame) -> pd.DataFrame:
+
+    # user interface message
     print()
-    print('Removing unwanted cBOM component type items... ')
+    print('Removing unwanted cbom components... ')
 
     # Get the index of component column
-    component_index = columns.get_single_header_index(df, 'Component', True)
+    component_index = columns.get_single_header_index(df, componentHdr, True)
 
-    # Remove unwanted description rows
-    mdf = rows.remove_rows_containing_string(df, component_index, unwanted_stella_cbom_component_type_string_list)
+    # delete row when the component is prohibited for dB upload
+    mdf = rows.delete_row_when_element_contains_string(df, component_index, unwanted_db_cbom_component_list)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
 
     return mdf
 
-def remove_zero_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
+
+def drop_item_with_zero_quantity(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
-    print('Removing zero quantity rows... ')
+    print('Removing items with zero quantity... ')
 
-    # Delete zero or empty quantity rows
-    mdf = rows.delete_row_when_element_zero(df, 'Qty')
+    # delete row when quantity is zero
+    mdf = rows.delete_row_when_element_zero(df, qtyHdr)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -909,7 +752,7 @@ def remove_zero_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
     return mdf
 
 
-def remove_less_than_threshold_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
+def drop_item_with_quantity_less_than_one(df: pd.DataFrame) -> pd.DataFrame:
 
     threshold = 1
 
@@ -917,8 +760,8 @@ def remove_less_than_threshold_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
     print()
     print(f'Removing items with quantity less than {threshold}... ')
 
-    # Delete zero or empty quantity rows
-    mdf = rows.delete_row_less_than_threshold(df, 'Qty', threshold)
+    # delete row when quantity is less than one
+    mdf = rows.delete_row_when_element_less_than_threshold(df, qtyHdr, threshold)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -926,13 +769,14 @@ def remove_less_than_threshold_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
     return mdf
 
 
-def remove_empty_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
+def drop_item_with_empty_quantity(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
-    print('Removing empty quantity rows... ')
+    print('Removing items with empty quantity... ')
 
-    # Delete zero or empty quantity rows
-    mdf = rows.delete_row_when_element_empty(df, 'Qty')
+    # delete row when quantity is empty
+    mdf = rows.delete_row_with_empty_element(df, qtyHdr)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
@@ -940,13 +784,14 @@ def remove_empty_quantity_data(df: pd.DataFrame) -> pd.DataFrame:
     return mdf
 
 
-def remove_empty_designator_data(df: pd.DataFrame) -> pd.DataFrame:
+def drop_items_with_empty_designator(df: pd.DataFrame) -> pd.DataFrame:
+
     # user interface message
     print()
-    print('Removing empty designator rows... ')
+    print('Removing items with empty designator.... ')
 
-    # Delete zero or empty quantity rows
-    mdf = rows.delete_row_when_element_empty(df, 'Designator')
+    # delete row when designator is empty
+    mdf = rows.delete_row_with_empty_element(df, designatorHdr)
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")

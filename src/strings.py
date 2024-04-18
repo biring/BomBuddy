@@ -242,8 +242,10 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
 
     import Levenshtein
 
+    max_threshold_for_valid_match = 5.0  # 0.0 is a perfect match, higher is lesser match
+
     # Initialize variables to keep track of the best match and its distance
-    best_match = None
+    best_match = "  "
     min_distance = float('inf')  # Start with a distance of positive infinity
 
     # Loop through each reference string
@@ -252,10 +254,10 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
         lower_ref_string = ref_string.lower()
         # Compute the Levenshtein distance between the test string and the current reference string
         distance = Levenshtein.distance(lower_test_string, lower_ref_string)
-        # print(f'{distance:2.2f} {test_string:20} {ref_string:20}')
+        # print(f'L = {distance:2.2f} {test_string:20} {ref_string:20}')
 
         # If the distance is smaller than the current minimum distance, update the best match
-        if distance < min_distance:
+        if (min_distance > distance) and (distance < max_threshold_for_valid_match):
             min_distance = distance
             best_match = ref_string
 
@@ -281,8 +283,9 @@ def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
        'pineapple'
     """
 
-    best_match = None
+    best_match = " "
     max_similarity = 0
+    minimum_similarity_threshold = 0.5  # 1.0 is a perfect match. 0.0 is no match
 
     # Iterate through each reference string
     for ref_string in reference_strings:
@@ -292,10 +295,10 @@ def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
         similarity = intersection / union
-        # print(f'{similarity:2.2f} {test_string:20} {ref_string:20}')
+        # print(f'J = {similarity:2.2f} {test_string:20} {ref_string:20}')
 
         # Update best match if similarity is higher
-        if similarity > max_similarity:
+        if (similarity > max_similarity) and (similarity > minimum_similarity_threshold):
             max_similarity = similarity
             best_match = ref_string
 

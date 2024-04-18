@@ -53,10 +53,9 @@ def read_excel_file_data(file_path):
     try:
         df = pd.read_excel(xls, sheet_name, header=None)
     except Exception as e:
-        raise FileNotFoundError("Excel file read failed.")
+        raise FileNotFoundError("Excel file read failed.", e)
 
     print(f'Sheet "{sheet_name}" read successful.')
-
 
     return df
 
@@ -113,7 +112,7 @@ def get_user_selected_excel_file_sheet(xls) -> pd.DataFrame:
     try:
         df = pd.read_excel(xls, sheet_name, header=None)
     except Exception as e:
-        raise FileNotFoundError("Excel file read failed.")
+        raise FileNotFoundError("Excel file read failed.", e)
 
     print(f'Sheet "{sheet_name}" read successful.')
 
