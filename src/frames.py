@@ -604,17 +604,19 @@ def cleanup_designators(df: pd.DataFrame) -> pd.DataFrame:
     print()
     print('Cleaning up designator column data... ')
 
-    # replace colon and semicolon by comma
-    df[designatorHdr] = df[designatorHdr].str.replace(r'[:;]', ',', regex=True)
+    # remove spaces
+    df[designatorHdr] = df[designatorHdr].str.replace(r'\s+', '', regex=True)
+
+    # replace special characters used to separate designators by comma
+    df[designatorHdr] = df[designatorHdr].str.replace(r'[:;、\'，]', ',', regex=True)
+
+    # replace duplicate commas by one comma
+    df[designatorHdr] = df[designatorHdr].str.replace(r',{2,}', ',', regex=True)
 
     # remove starting and trailing comma
     df[designatorHdr] = df[designatorHdr].str.lstrip(',')
     df[designatorHdr] = df[designatorHdr].str.rstrip(',')
 
-    # remove duplicate spaces
-    df[designatorHdr] = df[designatorHdr].str.replace(r'\s+', ' ', regex=True)
-    # replace duplicate commas by one comma
-    df[designatorHdr] = df[designatorHdr].str.replace(r',{2,}', ',', regex=True)
     print('Done.')
 
     return df

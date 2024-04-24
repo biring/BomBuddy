@@ -145,7 +145,7 @@ def check_ref_des_name(df: pd.DataFrame) -> pd.DataFrame:
             elif element == 'PCB':
                 designator_list.append(element)
             else:
-                print(f'Invalid reference designator {element}')
+                print(f'Invalid reference designator "{element}"')
                 exit()
         # Convert the designator list to a comma-separated raw_string
         designators = ','.join(designator_list)

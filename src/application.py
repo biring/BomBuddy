@@ -34,6 +34,8 @@ def process_cbom_for_cost_walk() -> None:
     cbom_df = frames.drop_item_with_empty_quantity(cbom_df)
     # remove zero quantity data
     cbom_df = frames.drop_item_with_zero_quantity(cbom_df)
+    # remove unwanted characters from designators
+    cbom_df = frames.cleanup_designators(cbom_df)
     # split multiple quantity to separate rows
     cbom_df = frames.split_multiple_quantity(cbom_df)
 
