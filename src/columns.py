@@ -43,17 +43,15 @@ def get_single_header_index(df, reference_string, full_match=True):
     return header_index
 
 
-def refactor_string_if_matched(df, pattern_column, data_column):
+def refactor_string_if_matched(df, string_column, match_column):
     count = 0
 
     # Get one pattern at a time
     for _, row_pattern in df.iterrows():
-        pattern = row_pattern.iloc[pattern_column]
+        pattern = row_pattern.iloc[string_column]
         for index, row_data in df.iterrows():
-            data = row_data.iloc[data_column]
-            result = data.replace(pattern + ",", "")\
-                .replace("," + pattern, "").replace(", " + pattern, "")\
-                .replace(pattern, "")
+            data = row_data.iloc[match_column]
+            result = data.replace(pattern, "")
 
             # when data has been updated
             if result != data:
@@ -61,7 +59,7 @@ def refactor_string_if_matched(df, pattern_column, data_column):
                 count += 1
                 # print(f"In row {index} found {pattern} in {data} so changed it to {result}")
                 # replace the data string
-                df.at[index, df.columns[data_column]] = result
+                df.at[index, df.columns[match_column]] = result
 
     # message for how many rows changed
     print(f"{count} rows updated")

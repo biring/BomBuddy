@@ -470,9 +470,10 @@ def remove_part_number_from_description(data_frame):
 
     mdf = columns.refactor_string_if_matched(data_frame, part_number_index, description_index)
 
-    # remove starting and trailing comma
-    mdf['Description'] = mdf['Description'].str.lstrip(',')
-    mdf['Description'] = mdf['Description'].str.rstrip(',')
+    # remove duplicate, starting and trailing comma that may be left after part number is removed from description
+    mdf[descriptionHdr] = mdf[descriptionHdr].str.lstrip(',')
+    mdf[descriptionHdr] = mdf[descriptionHdr].str.rstrip(',')
+    mdf[descriptionHdr] = mdf[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
 
     # user interface message
     print(f"Number of rows reduced from {mdf.shape[0]} to {mdf.shape[0]}")
