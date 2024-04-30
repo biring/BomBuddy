@@ -26,90 +26,99 @@ cost_walk_header_list = [itemHdr, designatorHdr, componentHdr, typeHdr, descript
                          manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
 
 bom_header_list = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
-                   criticalHdr, manufacturerHdr, partNoHdr, typeHdr, unitPriceHdr]
+                   criticalHdr, manufacturerHdr, partNoHdr, unitPriceHdr, typeHdr]
 
 # Dictionary of component type reference strings and normalized stella component type names
 component_dict = {
-    "Battery Terminals": "Battery Terminals",
-    "Buzzer": "Buzzer",
-    "Cable": "Cable",
-    "Capacitor": "Capacitor",
-    "SMD Capacitor": "Capacitor",
-    "Connector": "Connector",
-    "Crystal": "Crystal",
-    "Diode": "Diode",
-    "SMD Switching diode": "Diode",
-    "SMD Diode": "Diode",
-    "Electromagnet": "Electromagnet",
-    "Electrolytic Capacitor": "Capacitor",
-    "Foam": "Foam",
-    "FUSE": "FUSE",
-    "Fuse": "FUSE",
-    "Heatsink": "Heatsink",
-    "IC": "IC",
-    "Inductor": "Inductor",
-    "Jumper": "Jumper",
-    "LCD": "LCD",
-    "LED": "LED",
-    "SMD LED": "LED",
-    "LED Module": "LED Module",
-    "MCU": "MCU",
-    "MOV": "MOV/Varistor",
-    "Varistor": "MOV/Varistor",
-    "Optocoupler": "Optocoupler",
-    "PCB": "PCB",
-    "Relay": "Relay",
-    "Resistor": "Resistor",
-    "SMD Resistor": "Resistor",
-    "Sensor": "Sensor",
-    "Spring": "Spring",
-    "Switch": "Switch",
-    "TCO": "TCO",
-    "Thermistors": "Thermistors",
-    "Transformer": "Transformer",
-    "Transistor": "Transistor",
-    "SMD Transistor": "Transistor",
-    "Triac": "Triac/SCR",
-    "SCR": "Triac/SCR",
-    "Unknown": "Unknown/Misc",
-    "Misc": "Unknown/Misc",
-    "Voltage Regulator": "Voltage Regulator",
-    "Regulator": "Voltage Regulator",
-    "Wire": "Wire",
-
-    "BJT": "Transistor",
-    "Rectifier Bridge": "Diode",
-    "Chimney": "Chimney",
-    "Disc Ceramic Capacitor": "Capacitor",
-    "FRD": "Diode",
-    "SMD FRD": "Diode",
-    "Heat Shrink Tubing": "Heat Shrink",
-    "Heat Sink": "Heat Sink",
-    "Rectifier": "Diode",
-    "SMD Rectifier": "Diode",
-    "IR Receiver": "Diode",
-    "Lens": "Lens",
-    "MOS": "Transistor",
-    "Operational amplifier": "IC",
-    "PCB Tab": "Connector",
-    "Quick fit terminal": "Connector",
-    "Screw": "Screw",
-    "Tact Switch": "Switch",
-    "Touch spring": "Spring",
-    "TVS": "Diode",
-    "Wire wound resistor": "Resistor",
-    "Zener": "Diode",
-    "SMD Zener": "Diode",
-
+    # list based on db template
+    "Battery Terminals": [
+        "Battery Terminals"],
+    "Buzzer": [
+        "Buzzer", "Speaker"],
+    "Cable": [
+        "Cable"],
+    "Capacitor": [
+        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion"],
+    "Connector": [
+        "Connector", "PCB Tab", "Quick fit terminal", "Plug piece terminal"],
+    "Crystal": [
+        "Crystal"],
+    "Diode": [
+        "Diode", "Switching diode", "Rectifier Bridge", "Bridge Rectifiers", "FRD", "Rectifier",
+        "TVS", "Zener", "Bridge Rectifier", "Rectifier Diode", "Schottky", "Schottky Diode",
+        "IR Receiver"],
+    "Electromagnet": [
+        "Electromagnet"],
+    "Foam": [
+        "Foam"],
+    "FUSE": [
+        "FUSE"],
+    "Heatsink": [
+        "Heatsink"],
+    "IC": [
+        "IC", "Operational amplifier"],
+    "Inductor": [
+        "Inductor"],
+    "Jumper": [
+        "Jumper"],
+    "LCD": [
+        "LCD"],
+    "LED": [
+        "LED", "LED Module"],
+    "MCU": [
+        "MCU"],
+    "MOV/Varistor": [
+        "MOV/Varistor", "MOV", "Varistor"],
+    "Optocoupler": [
+        "Optocoupler"],
+    "PCB": [
+        "PCB"],
+    "Relay": [
+        "Relay"],
+    "Resistor": [
+        "Resistor", "Wire wound resistor", "Wire wound non flame resistor"],
+    "Sensor": [
+        "Sensor"],
+    "Spring": [
+        "Spring", "Touch spring"],
+    "Switch": [
+        "Switch", "Tact Switch"],
+    "TCO": [
+        "TCO"],
+    "Thermistors": [
+        "Thermistors", "NTC"],
+    "Transformer": [
+        "Transformer"],
+    "Transistor": [
+        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH"],
+    "Triac/SCR": [
+        "Triac/SCR", "Triac", "SCR"],
+    "Unknown/Misc": [
+        "Unknown/Misc", "Unknown", "Misc"],
+    "Voltage Regulator": [
+        "Voltage Regulator", "Regulator", "LDO", "three-terminal adjustable regulator"],
+    "Wire": [
+        "Wire"],
+    # list based on test data
+    "Chimney": [
+        "Chimney"],
+    "Heat Shrink": [
+        "Heat Shrink", "Heat Shrink Tubing"],
+    "Heat Sink": [
+        "Heat Sink"],
+    "Lens": [
+        "Lens"],
+    "Screw": [
+        "Screw"]
 }
 
 # List of strings to determine which rows to delete based on string match with description header
 unwanted_db_ebom_description_list = [
-    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
+    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw"]
 
 # List of strings to determine which rows to delete based on string match with description header
 unwanted_db_cbom_description_list = [
-    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw", "Wire", "AWG"]
+    "Glue", "Solder", "Compound", "Conformal", "Coating", "Screw"]
 
 # List of strings to determine which rows to delete based on string match with component type
 unwanted_db_ebom_component_list = [
@@ -251,9 +260,13 @@ def split_manufacturers_to_separate_rows(original_df):
         # get values we need
         component_string = row.iloc[component_index]
         name_string = row.iloc[name_index]
-        part_number_string = row.iloc[part_number_index]
+        # part number may be all numbers so force data to string
+        part_number_string = str(row.iloc[part_number_index])
         name_list = name_string.split('\n')
         part_number_list = part_number_string.split('\n')
+        # remove any "" items from the list.
+        name_list = [item for item in name_list if item != ""]
+        part_number_list = [item for item in part_number_list if item != ""]
 
         # number of manufacturer names must be the same as manufacturer part numbers
         if len(name_list) != len(part_number_list):
@@ -379,7 +392,7 @@ def normalize_component_type_label(df):
 
     # message
     print()
-    print('Refactoring component type labels... ')
+    print('Refactoring component column data... ')
 
     # Get component type column
     matching_columns = []
@@ -403,26 +416,38 @@ def normalize_component_type_label(df):
 
     # Get one row at a time
     count = 0
+    keyCount = 0
     for _, row in df.iterrows():
         # Get component type
         component_type_name = row.iloc[type_index]
-        # Get the key list
-        keys_list = list(component_dict.keys())
-        # Get the best matched key to component type key
-        key_match1 = strings.find_best_match_jaccard(component_type_name, keys_list)
-        key_match2 = strings.find_best_match_levenshtein(component_type_name, keys_list)
-        value_match = ""
-        if key_match1 == key_match2:
-            # Get the value of the matched key
-            value_match = component_dict[key_match1]
-            # replace the component type name in the row
-            row.iloc[type_index] = value_match
+        # ignore SMD if found in component column element
+        component_string = component_type_name.replace("SMD", "")
+        # Get all values from the component dict
+        value_list = [value for sublist in component_dict.values() for value in sublist]
+        # Get the best matched value
+        value_match1 = strings.find_best_match_jaccard(component_string, value_list)
+        value_match2 = strings.find_best_match_levenshtein(component_string, value_list)
+        key_match = "*" + component_type_name
+        if value_match1 == value_match2:
             # for debug keep track of number of items changed
             count += 1
+            # Get the key of the matched value
+            for key, values in component_dict.items():
+                if value_match1 in values:
+                    key_match = key
+                    keyCount += 1
+                    # raise exception when multiple keys are found
+                    try:
+                        keyCount > 1
+                    except Exception as e:
+                        raise ValueError(f"Multiple component match found for {component_type_name}.", e)
+        # replace the component type name in the row
+        row.iloc[type_index] = key_match
+
         # add row to updated data frame
         updated_df.loc[len(updated_df)] = row
         # debug message
-        print(f'{component_type_name:30} -> {value_match:30} [{key_match1}/{key_match2}]')
+        print(f'{component_type_name:30} -> {key_match:30} [{value_match1}/{value_match2}]')
 
     # message for how many rows changed
     print(f"{count} rows updated")
@@ -498,7 +523,6 @@ def merge_type_data_with_description(df):
 
 
 def select_build(df: pd.DataFrame) -> pd.DataFrame:
-
     # get all the build names for which data is available in the dataframe
     build_dict = rows.get_build_name_and_column(df)
 
@@ -526,18 +550,7 @@ def split_multiple_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
     return data_frame
 
 
-def reorder_header_to_ebom_template(df: pd.DataFrame) -> pd.DataFrame:
-    ebom_header_order_list = [
-        'Component', 'Description', 'Qty', 'Designator',
-        'Critical Component', 'Manufacturer', 'Manufacturer P/N']
-
-    mdf = columns.reorder_header_to_list(df, ebom_header_order_list)
-
-    return mdf
-
-
 def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Extracting columns for cost walk...')
@@ -555,7 +568,6 @@ def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def extract_bom_columns(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Extracting columns for bom...')
@@ -573,26 +585,35 @@ def extract_bom_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_description(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Cleaning up description column data... ')
 
     # remove duplicate spaces
     df[descriptionHdr] = df[descriptionHdr].str.replace(r'\s+', ' ', regex=True)
-    # colon and semicolon are replaced by comma
-    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[:;]', ',', regex=True)
-    # replace multiple commas by one comma
-    df[descriptionHdr] = df[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
 
     # special 'characters' cases...
     df[descriptionHdr] = df[descriptionHdr].str.replace(r'[，]', ',', regex=True)
     df[descriptionHdr] = df[descriptionHdr].str.replace(r'[（]', '(', regex=True)
     df[descriptionHdr] = df[descriptionHdr].str.replace(r'[）]', ')', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[；]', ';', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[：]', ':', regex=True)
+
+    # sometimes data is semi-colon separated
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[;]', ',', regex=True)
+
+    # multiple comma, space before and after a comma are replaced by just a comma
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r' ,', ',', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r', ', ',', regex=True)
 
     # remove starting and trailing comma
     df[descriptionHdr] = df[descriptionHdr].str.lstrip(',')
     df[descriptionHdr] = df[descriptionHdr].str.rstrip(',')
+
+    # remove starting and trailing space
+    df[descriptionHdr] = df[descriptionHdr].str.lstrip(' ')
+    df[descriptionHdr] = df[descriptionHdr].str.rstrip(' ')
 
     print('Done.')
 
@@ -600,7 +621,6 @@ def cleanup_description(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_designators(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Cleaning up designator column data... ')
@@ -624,7 +644,6 @@ def cleanup_designators(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Cleaning up manufacturer column data... ')
@@ -636,6 +655,8 @@ def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
 
     # replace ".," with space. Special case for "Co.,Ltd" to "Co Ltd"
     df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'.,', ' ', regex=True)
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'.，', ' ', regex=True)
+
     # replace colon and dot with space
     df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'[:.]', ' ', regex=True)
 
@@ -647,7 +668,9 @@ def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
     df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'\n', ',', regex=True)
 
     # remove duplicate spaces
-    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r'\s+', ' ', regex=True)
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r' {2,}', ' ', regex=True)
+    # replace duplicate commas by one comma
+    df[manufacturerHdr] = df[manufacturerHdr].str.replace(r',{2,}', ',', regex=True)
 
     print('Done.')
 
@@ -655,12 +678,14 @@ def cleanup_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def cleanup_part_number(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Cleaning up part number column data... ')
 
-    # elements are comma separated
+    # remove duplicate spaces
+    df[partNoHdr] = df[partNoHdr].str.replace(r' {2,}', ' ', regex=True)
+
+    # elements are comma separated1
     df[partNoHdr] = df[partNoHdr].str.replace(r'\n', ',', regex=True)
 
     print('Done.')
@@ -669,7 +694,6 @@ def cleanup_part_number(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_unwanted_db_ebom_description(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing unwanted eBOM description items... ')
@@ -687,7 +711,6 @@ def drop_unwanted_db_ebom_description(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_unwanted_db_cbom_description(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing unwanted cbom description...')
@@ -705,7 +728,6 @@ def drop_unwanted_db_cbom_description(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_unwanted_db_ebom_component(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing unwanted ebom component... ')
@@ -723,7 +745,6 @@ def drop_unwanted_db_ebom_component(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_unwanted_db_cbom_component(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing unwanted cbom components... ')
@@ -741,7 +762,6 @@ def drop_unwanted_db_cbom_component(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_item_with_zero_quantity(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing items with zero quantity... ')
@@ -756,7 +776,6 @@ def drop_item_with_zero_quantity(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_item_with_quantity_less_than_one(df: pd.DataFrame) -> pd.DataFrame:
-
     threshold = 1
 
     # user interface message
@@ -773,7 +792,6 @@ def drop_item_with_quantity_less_than_one(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_item_with_empty_quantity(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing items with empty quantity... ')
@@ -788,7 +806,6 @@ def drop_item_with_empty_quantity(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_items_with_empty_designator(df: pd.DataFrame) -> pd.DataFrame:
-
     # user interface message
     print()
     print('Removing items with empty designator.... ')

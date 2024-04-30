@@ -105,9 +105,6 @@ def process_cbom_for_db_upload() -> None:
     # check qty matches reference designator count
     frames.check_qty_matched_ref_des_count(data_frame)
 
-    # remove rows that have unwanted items
-    # data_frame = frames.drop_rows_with_unwanted_ebom_items(data_frame)
-
     # separate manufacturers to separate rows
     data_frame = frames.split_manufacturers_to_separate_rows(data_frame)
     # clean up manufacturer name
@@ -202,9 +199,6 @@ def process_ebom_for_db_upload():
     df = frames.merge_type_data_with_description(df)
     # remove part number from description
     df = frames.remove_part_number_from_description(df)
-
-    # keep only the columns needed based on eBOM template
-    df = frames.reorder_header_to_ebom_template(df)
 
     # *** write eBOM data to file ***
     # get path to output data folder

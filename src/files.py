@@ -129,7 +129,7 @@ def write_single_sheet_excel_file_data(folder, file, df) -> None:
     file_path = os.path.normpath(file_path)
 
     try:
-        df.to_excel(file_path, index=True)  # Set index=False to exclude the DataFrame index from being written
+        df.to_excel(file_path, index=False)  # Set index=False to exclude the DataFrame index from being written
     except Exception as e:
         raise FileExistsError(f'Excel file write to "{file_path}" FAILED.', e)
 
