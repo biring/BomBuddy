@@ -145,7 +145,7 @@ def check_ref_des_name(df: pd.DataFrame) -> pd.DataFrame:
             elif element == 'PCB':
                 designator_list.append(element)
             else:
-                print(f'Invalid reference designator "{element}"')
+                print(f'Invalid reference designator in row {row} = "{element}"')
                 exit()
         # Convert the designator list to a comma-separated raw_string
         designators = ','.join(designator_list)
@@ -155,7 +155,7 @@ def check_ref_des_name(df: pd.DataFrame) -> pd.DataFrame:
 
         # update number of rows updated count
         if designators != raw_string:
-            print(f'changed {raw_string} to {designators}')
+            print(f"changed '{raw_string}' to '{designators}'")
             rows_changed_count += 1
 
     # debug message

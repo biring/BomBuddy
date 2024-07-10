@@ -98,8 +98,11 @@ def delete_columns_with_unwanted_build_data(df: pd.DataFrame, build_dict: dict) 
     selected_key = list(build_dict.keys())[selected_index]
 
     start_value = build_dict[selected_key]
+    end_value = start_value + 6
+    if end_value > len(df.columns):
+        end_value = len(df.columns)
     # Generating list with the selected value and the next consecutive five numbers
-    columns_to_keep.extend(list(range(start_value, start_value + 6)))
+    columns_to_keep.extend(list(range(start_value, end_value)))
 
     # Creating a new DataFrame with only the selected columns
     new_df = df[columns_to_keep]

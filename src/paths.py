@@ -59,7 +59,7 @@ def get_path_to_excel_file_in_folder(folder_path):
     files = os.listdir(folder_path)
 
     # filter only Excel files
-    excel_files = [file for file in files if re.match(r'.*\.xlsx?$', file, re.IGNORECASE)]
+    excel_files = [file for file in files if re.match(r'.*\.xlsx$', file, re.IGNORECASE)]
 
     if not excel_files:
         raise FileNotFoundError(f'No Excel file found in the folder "{folder_path}"')
@@ -128,7 +128,7 @@ def get_selected_excel_file_name(folder_path):
     files = os.listdir(folder_path)
 
     # filter only Excel files
-    excel_files = [file for file in files if re.match(r'.*\.xlsx?$', file, re.IGNORECASE)]
+    excel_files = [file for file in files if re.match(r'.*\.xlsx$', file, re.IGNORECASE)]
 
     if not excel_files:
         raise FileNotFoundError(f'No Excel file found in the folder "{folder_path}"')

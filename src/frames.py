@@ -38,7 +38,7 @@ component_dict = {
     "Cable": [
         "Cable"],
     "Capacitor": [
-        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion"],
+        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion", "Y1-Cap"],
     "Connector": [
         "Connector", "PCB Tab", "Quick fit terminal", "Plug piece terminal"],
     "Crystal": [
@@ -58,7 +58,7 @@ component_dict = {
     "IC": [
         "IC", "Operational amplifier"],
     "Inductor": [
-        "Inductor"],
+        "Inductor", "Common mode choke", "Choke"],
     "Jumper": [
         "Jumper"],
     "LCD": [

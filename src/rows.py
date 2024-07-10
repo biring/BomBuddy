@@ -114,11 +114,15 @@ def delete_empty_zero_rows(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
 
 def duplicate_row_for_multiple_quantity(df: pd.DataFrame) -> pd.DataFrame:
 
+    # Quantity column is integer
+    df['Qty'] = df['Qty'].astype(float)
+
     # Create an empty DataFrame to store the updated rows
     mdf = pd.DataFrame(columns=df.columns)
 
     for index, old_row in df.iterrows():
-        while old_row['Qty'] > 1:
+        # only split integers when greater than one.
+        while old_row['Qty'] > 1 and old_row['Qty'] % 1 == 0:
             ref_des_list = old_row['Designator'].split(',')
 
             new_row = old_row.copy()
@@ -170,12 +174,18 @@ def standardize_component_name(df: pd.DataFrame, component_dict: dict, component
 
 
 def delete_row_when_element_zero(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+    # Convert the column to numeric if it's not already numeric
+    df[column_name] = pd.to_numeric(df[column_name], errors='coerce')
+
     # Delete rows with zero values in the specified column
     mdf = df[df[column_name] != 0]
     return mdf
 
 
 def delete_row_when_element_less_than_threshold(df: pd.DataFrame, column: str, threshold: int) -> pd.DataFrame:
+    # Convert the column to numeric if it's not already numeric
+    df[column] = pd.to_numeric(df[column], errors='coerce')
+
     # Delete rows with zero values in the specified column
     mdf = df[df[column] >= threshold]
     return mdf
