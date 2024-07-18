@@ -2,6 +2,9 @@
 |----------- LOCAL -----------|		|-- SERVER--|			
 <Working>-<Staging>-<LocalRepo>		<RemoteRepo>	
 
+RESET GIT CONNECTION
+git config --global --unset-all remote.origin.proxy
+	Resolve error: unable to access 'https://github.com/...': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
 
 COMMIT CHANGES TO REMOTE
 git diff
@@ -19,7 +22,7 @@ git pull origin master
 	Other developers may have made changes 
 git push origin <branch>
 	Push changes to remote repository
-git log --online -5
+git log --oneline -5
 	Verify commit and hash is good
 git status
 	Verify branch is upto date
@@ -108,3 +111,17 @@ SAVE CHANGES YOU DONT WANT TO COMMIT TO REMOTE
 2. DO: git clone <repo-url> <directory.
 	Create a copy of your repository. 
 	This is back you can get later
+
+
+DELETE UNTRACKED GIT FILES
+Follow these steps to properly delete and git clean untracked files in your local workspace:
+git clean -n
+	Preview of files that will be deleted.
+git clean -f
+	Force deletion of untracked files.
+git clean -f -d
+	Force deletion of untracked directories.
+git clean -f -x
+	Force deletion of untracked .gitignore files.
+
+

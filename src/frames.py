@@ -1,16 +1,18 @@
 # This file has functions to manipulate both rows and columns in a data frame
 import pandas as pd
 
-import header
 import columns
+import header
 import rows
 
-# Standardized header names used across eBOM, cBOM and cost walk. They are based off the bom template
+# Standardized header names used across eBOM, cBOM and cost walk. They are based off the bom template v2.0 and v3.0
 itemHdr = "Item"
 componentHdr = "Component"
 descriptionHdr = "Description"
 typeHdr = "Type"
+pkgHdr = "Device Package"
 criticalHdr = "Critical Component"
+classHdr = "Classification"
 manufacturerHdr = "Manufacturer"
 partNoHdr = "Manufacturer P/N"
 qtyHdr = "Qty"
@@ -22,13 +24,32 @@ boardHdr = "Board"
 # strings to look for when searching for the bom header
 header_search_string_list = [designatorHdr, manufacturerHdr, qtyHdr]
 
-cost_walk_header_list = [itemHdr, designatorHdr, componentHdr, typeHdr, descriptionHdr,
-                         manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+bom_type = ""
+bom_template_version = 1  # default is set to 1 as 1 is not supported
 
-bom_header_list = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
-                   criticalHdr, manufacturerHdr, partNoHdr, unitPriceHdr, typeHdr]
+cost_walk_header_list = []
 
-# Dictionary of component type reference strings and normalized stella component type names
+cost_walk_header_list_v2 = [itemHdr, designatorHdr, componentHdr, typeHdr, descriptionHdr,
+                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+
+cost_walk_header_list_v3 = [itemHdr, designatorHdr, componentHdr, pkgHdr, descriptionHdr,
+                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+
+bom_header_list = []
+
+cbom_header_list_v2 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
+                       criticalHdr, manufacturerHdr, partNoHdr, unitPriceHdr, typeHdr]
+
+ebom_header_list_v2 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
+                       criticalHdr, manufacturerHdr, partNoHdr, typeHdr]
+
+cbom_header_list_v3 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
+                       classHdr, manufacturerHdr, partNoHdr, unitPriceHdr, pkgHdr]
+
+ebom_header_list_v3 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
+                       classHdr, manufacturerHdr, partNoHdr, pkgHdr]
+
+# Dictionary of component type reference strings (case-insensitive) and normalized stella component type names.
 component_dict = {
     # list based on db template
     "Battery Terminals": [
@@ -38,14 +59,18 @@ component_dict = {
     "Cable": [
         "Cable"],
     "Capacitor": [
-        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion", "Y1-Cap"],
+        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion",
+        "X1 Cap", "X1 Capacitor", "X1 Capacitance",
+        "X2 Cap", "X2 Capacitor", "X2 Capacitance",
+        "Y1 Cap", "Y1 Capacitor", "Y1 Capacitance",
+        "Y2 Cap", "Y2 Capacitor", "Y2 Capacitance"],
     "Connector": [
         "Connector", "PCB Tab", "Quick fit terminal", "Plug piece terminal"],
     "Crystal": [
         "Crystal"],
     "Diode": [
         "Diode", "Switching diode", "Rectifier Bridge", "Bridge Rectifiers", "FRD", "Rectifier",
-        "TVS", "Zener", "Bridge Rectifier", "Rectifier Diode", "Schottky", "Schottky Diode",
+        "TVS", "Zener", "Zener Diode", "Bridge Rectifier", "Rectifier Diode", "Schottky", "Schottky Diode",
         "IR Receiver"],
     "Electromagnet": [
         "Electromagnet"],
@@ -90,7 +115,7 @@ component_dict = {
     "Transformer": [
         "Transformer"],
     "Transistor": [
-        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH"],
+        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH", "PNP Transistor", "NPN Transistor"],
     "Triac/SCR": [
         "Triac/SCR", "Triac", "SCR"],
     "Unknown/Misc": [
@@ -162,6 +187,56 @@ def search_and_set_bom_header(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def determine_bom_template_version(df: pd.DataFrame, bom=str) -> None:
+    # user interface message
+    print()
+    print("Determining what version of the template was used generate the BOM... ")
+
+    global bom_type
+    global bom_template_version
+    global bom_header_list
+    global cost_walk_header_list
+
+    global typeHdr
+    global pkgHdr
+    global criticalHdr
+    global classHdr
+
+    if bom == "CBOM" or bom == "EBOM":
+        bom_type = bom
+    else:
+        raise ValueError(f"BOM type = '{type}' not supported")
+
+    # get the header row
+    temp_header = df.columns
+
+    # determine the BOM template version
+    if criticalHdr in temp_header:
+        bom_template_version = 2
+        cost_walk_header_list = cost_walk_header_list_v2
+        if bom_type == "EBOM":
+            bom_header_list = ebom_header_list_v2
+        elif bom_type == "CBOM":
+            bom_header_list = cbom_header_list_v2
+
+    elif classHdr in temp_header:
+        bom_template_version = 3
+        cost_walk_header_list = cost_walk_header_list_v3
+        if bom_type == "EBOM":
+            bom_header_list = ebom_header_list_v3
+        elif bom_type == "CBOM":
+            bom_header_list = cbom_header_list_v3
+    else:
+        raise ValueError("Application not able to determine the version of BOM template "
+                         "used for input CBOM data file.\nThis application can only process "
+                         "data for BOM template version 2.0 and 3.0")
+
+    # user interface message
+    print(f"Detected BOM template version = {bom_template_version}")
+
+    return
+
+
 def delete_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Delete rows containing either NaN values or empty strings from a pandas DataFrame.
@@ -218,6 +293,31 @@ def delete_empty_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def set_bom_column_datatype(df: pd.DataFrame) -> pd.DataFrame:
+    # By default, all columns of data are treated as string
+    df = df.astype(str)
+
+    # panda dataframe places a 'nan' for empty cells. When converted to string we end up with 'nan' string
+    # this should be removed and replaced with an empty cell
+    df = df.replace("nan", "")
+
+    # items column data contains numbers. It may be decimal data so convert to float.
+    df[itemHdr] = df[itemHdr].replace("", 0)  # empty cells are treated as zeros
+    df[itemHdr] = df[itemHdr].astype(float)
+
+    # qty column data contains numbers. It will contain some decimal data (like glue qty) so convert to float.
+    df[qtyHdr] = df[qtyHdr].replace("", 0)  # empty cells are treated as zeros
+    df[qtyHdr] = df[qtyHdr].astype(float)
+
+    # EBOMs do not contain unit price data
+    if unitPriceHdr in df.columns:
+        # unit price column data contains numbers. It will be decimal data so convert to float.
+        df[unitPriceHdr] = df[unitPriceHdr].replace("", 0)  # empty cells are treated as zeros
+        df[unitPriceHdr] = df[unitPriceHdr].astype(float)
+
+    return df
+
+
 def split_manufacturers_to_separate_rows(original_df):
     """
     Split manufacturer names and corresponding part numbers to separate rows in the DataFrame.
@@ -237,8 +337,14 @@ def split_manufacturers_to_separate_rows(original_df):
     print()
     print('Separating manufacturer names to separate rows...')
 
+    # local variables
+    exception_list = []
+
     # List of component type that do not need to be split
-    exception_list = ["Res", "Cap", "Ind"]
+    if bom_template_version == 2.0:
+        exception_list = ["Res", "Cap", "Ind"]
+    elif bom_template_version == 3.0:
+        exception_list = []  # for version 3.0 we separate all alternatives
 
     # Get the index of manufacturer name column
     name_index = columns.get_single_header_index(original_df, 'Manufacturer', True)
@@ -416,12 +522,12 @@ def normalize_component_type_label(df):
 
     # Get one row at a time
     count = 0
-    keyCount = 0
+    key_count = 0
     for _, row in df.iterrows():
         # Get component type
         component_type_name = row.iloc[type_index]
-        # ignore SMD if found in component column element
-        component_string = component_type_name.replace("SMD", "")
+        # ignore SMD, DIP if found in component type name as they add not value
+        component_string = component_type_name.replace("SMD", "").replace("DIP", "")
         # Get all values from the component dict
         value_list = [value for sublist in component_dict.values() for value in sublist]
         # Get the best matched value
@@ -435,10 +541,10 @@ def normalize_component_type_label(df):
             for key, values in component_dict.items():
                 if value_match1 in values:
                     key_match = key
-                    keyCount += 1
+                    key_count += 1
                     # raise exception when multiple keys are found
                     try:
-                        keyCount > 1
+                        key_count > 1
                     except Exception as e:
                         raise ValueError(f"Multiple component match found for {component_type_name}.", e)
         # replace the component type name in the row
@@ -500,10 +606,67 @@ def remove_part_number_from_description(data_frame):
     mdf[descriptionHdr] = mdf[descriptionHdr].str.rstrip(',')
     mdf[descriptionHdr] = mdf[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
 
-    # user interface message
-    print(f"Number of rows reduced from {mdf.shape[0]} to {mdf.shape[0]}")
-
     return data_frame
+
+
+def merge_alternative(df):
+    """
+    merge alternative items with primary item row using "/n" delimiter.
+
+    This is done to allow CBOM version 3.0 to work with application designed for CBOM template version 2.0.
+    We merge data so CBOM version 3.0 looks like CBOM version 2.0 and then split it later
+
+    """
+    # message
+    print()
+    print('Merging alternatives items with primary item...')
+
+    # Reference string to detect alternative item row
+    alt_ref_string = "ALT"
+
+    # Initialize variables to store previous primary item values
+    prev_desc = ''
+    prev_mfg = ''
+    prev_pn = ''
+
+    # Create an empty data frame with same header
+    df_new = pd.DataFrame(columns=df.columns)
+    df_merger = df_new
+
+    # read each row on at a time
+    for _, row in df.iterrows():
+        if alt_ref_string not in row[componentHdr]:
+
+            # first time around no need to concat as there is not data
+            if len(df_merger) != 0:
+                df_new = pd.concat([df_new, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
+            df_merger = row
+            prev_desc = row[designatorHdr]
+            prev_mfg = row[manufacturerHdr]
+            prev_pn = row[partNoHdr]
+        else:
+            if row[descriptionHdr]:
+                df_merger[descriptionHdr] += "\n" + row[designatorHdr]
+            else:
+                df_merger[descriptionHdr] += "\n" + prev_desc
+
+            if row[manufacturerHdr]:
+                df_merger[manufacturerHdr] += "\n" + row[manufacturerHdr]
+            else:
+                df_merger[manufacturerHdr] += "\n" + prev_mfg
+
+            if row[partNoHdr]:
+                df_merger[partNoHdr] += "\n" + row[partNoHdr]
+            else:
+                df_merger[partNoHdr] += "\n" + prev_pn
+
+    # last row merger needs to be done outside the for loop
+    df_new = pd.concat([df_new, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
+
+    # user interface message
+    print(f"Number of row in the BOM changed from {df.shape[0]} to {df_new.shape[0]}")
+
+    return df_new
 
 
 def merge_type_data_with_description(df):
@@ -511,11 +674,17 @@ def merge_type_data_with_description(df):
     print()
     print('Merging type column data with description column data... ')
 
+    # local variables
+    part_number_index = -1
+
     # Get the index of the type column
-    part_number_index = columns.get_single_header_index(df, 'Type', True)
+    if bom_template_version == 2.0:
+        part_number_index = columns.get_single_header_index(df, typeHdr, True)
+    elif bom_template_version == 3.0:
+        part_number_index = columns.get_single_header_index(df, pkgHdr, True)
 
     # Get the index of description column
-    description_index = columns.get_single_header_index(df, 'Description', True)
+    description_index = columns.get_single_header_index(df, descriptionHdr, True)
 
     df = rows.merge_row_data_when_no_found(df, part_number_index, description_index)
 
@@ -791,27 +960,13 @@ def drop_item_with_quantity_less_than_one(df: pd.DataFrame) -> pd.DataFrame:
     return mdf
 
 
-def drop_item_with_empty_quantity(df: pd.DataFrame) -> pd.DataFrame:
-    # user interface message
-    print()
-    print('Removing items with empty quantity... ')
-
-    # delete row when quantity is empty
-    mdf = rows.delete_row_with_empty_element(df, qtyHdr)
-
-    # user interface message
-    print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
-
-    return mdf
-
-
 def drop_items_with_empty_designator(df: pd.DataFrame) -> pd.DataFrame:
     # user interface message
     print()
     print('Removing items with empty designator.... ')
 
     # delete row when designator is empty
-    mdf = rows.delete_row_with_empty_element(df, designatorHdr)
+    mdf = df[df[designatorHdr] != ""]
 
     # user interface message
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")

@@ -55,7 +55,7 @@ def standardize_header_names(df: pd.DataFrame, new_str_list: list) -> pd.DataFra
 
     # get each header string one at a time
     for old_string in df.columns:
-        # Special case for comparison and debug message so we dont get new line in debug message
+        # Special case for comparison and debug message, so we don't get new line in debug message
         ref_string = re.sub(r'\n', '', old_string)  # Using re.sub() instead of str.replace()
 
         # Get the best matched string to the header string
@@ -72,4 +72,3 @@ def standardize_header_names(df: pd.DataFrame, new_str_list: list) -> pd.DataFra
         print(f' {ref_string:30} -> {new_string:30} [{match_1},{match_2}]')
 
     return df
-
