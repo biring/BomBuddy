@@ -3,37 +3,26 @@ import files
 import strings
 import frames
 
+# global variable with NULL value.
+# Should be removed when refactoring to OOP programming is completed
+# or create getters and setters in lower modules, so we don't use globals.
+excel_data = None
+df = None
+file_name = None
 
-def process_cbom_for_cost_walk() -> None:
+
+def sequence_cbom_for_cost_walk() -> None:
+    global df
 
     # *** read Excel data file ***
-    # get path to input data folder
-    folder_path = paths.get_path_to_input_file_folder()
-    # get Excel file name to process
-    file_name = paths.get_selected_excel_file_name(folder_path)
-    # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    steps_to_read_an_excel_file()
 
     # *** Extract cbom sheet to process ***
-    # extract user selected Excel file sheet
-    df = files.get_user_selected_excel_file_sheet(excel_data)
-    # only keep cost data for build on interest
-    df = frames.select_build(df)
+    steps_to_get_user_selected_excel_sheet()
 
     # *** Extract cbom table ***
     # drop rows above cBOM header
-    df = frames.search_and_set_bom_header(df)
-    # determine version of BOM template as it will determine how BOM cleanup will happen
-    frames.determine_bom_template_version(df, "CBOM")
-    # keep only the columns needed based on cBOM cost walk
-    df = frames.extract_cost_walk_columns(df)
-    # delete empty rows and columns
-    df = frames.delete_empty_rows(df)
-    df = frames.delete_empty_columns(df)
-    # set datatype for columns
-    df = frames.set_bom_column_datatype(df)
-    # merge alternative components to one row
-    df = frames.merge_alternative(df)
+    steps_to_get_bom_data_from_excel_sheet("CW")
 
     # *** Clean up data ***
     # remove zero quantity data
@@ -44,46 +33,22 @@ def process_cbom_for_cost_walk() -> None:
     df = frames.split_multiple_quantity(df)
 
     # *** write cBOM data to file ***
-    # get path to output data folder
-    folder_path = paths.get_path_to_outputs_folder()
-    # Set Excel file name
-    file_name = "CW_" + file_name
-    # write Excel file data
-    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+    steps_to_write_bom_to_single_sheet_excel_file("COST WALK ")
 
     return None
 
 
-def process_cbom_for_db_upload() -> None:
+def sequence_cbom_for_db_upload() -> None:
+    global df
 
     # *** read cBOM Excel data file ***
-    # get path to input data folder
-    folder_path = paths.get_path_to_input_file_folder()
-    # get Excel file name to process
-    file_name = paths.get_selected_excel_file_name(folder_path)
-    # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    steps_to_read_an_excel_file()
 
     # *** Extract sheet to process ***
-    # extract user selected Excel file sheet
-    df = files.get_user_selected_excel_file_sheet(excel_data)
-    # only keep cost data for build on interest
-    df = frames.select_build(df)
+    steps_to_get_user_selected_excel_sheet()
 
     # *** Extract cbom data ***
-    # drop rows above BOM header
-    df = frames.search_and_set_bom_header(df)
-    # determine version of BOM template as it will determine how BOM cleanup will happen
-    frames.determine_bom_template_version(df, "CBOM")
-    # keep only the columns needed based on cBOM template
-    df = frames.extract_bom_columns(df)
-    # delete empty rows and columns
-    df = frames.delete_empty_rows(df)
-    df = frames.delete_empty_columns(df)
-    # set datatype for columns
-    df = frames.set_bom_column_datatype(df)
-    # merge alternative components to one row
-    df = frames.merge_alternative(df)
+    steps_to_get_bom_data_from_excel_sheet("CBOM")
 
     # *** Clean up cbom data ***
     # remove empty designator data
@@ -126,46 +91,22 @@ def process_cbom_for_db_upload() -> None:
     df = frames.remove_part_number_from_description(df)
 
     # *** write scrubbed cBOM data to file ***
-    # get path to output data folder
-    folder_path = paths.get_path_to_outputs_folder()
-    # Set Excel file name
-    file_name = "dBcBOM_" + file_name
-    # write Excel file data
-    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+    steps_to_write_bom_to_single_sheet_excel_file("CBOM DB ")
 
     return None
 
 
-def process_ebom_for_db_upload():
+def sequence_ebom_for_db_upload():
+    global df
 
     # *** read Excel data file ***
-    # get path to input data folder
-    folder_path = paths.get_path_to_input_file_folder()
-    # get Excel file name to process
-    file_name = paths.get_selected_excel_file_name(folder_path)
-    # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    steps_to_read_an_excel_file()
 
     # *** Extract cbom sheet to process ***
-    # extract user selected Excel file sheet
-    df = files.get_user_selected_excel_file_sheet(excel_data)
-    # only keep cost data for build on interest
-    df = frames.select_build(df)
+    steps_to_get_user_selected_excel_sheet()
 
     # *** Extract ebom table ***
-    # drop rows above cBOM header
-    df = frames.search_and_set_bom_header(df)
-    # determine version of BOM template as it will determine how BOM cleanup will happen
-    frames.determine_bom_template_version(df, "EBOM")
-    # keep only the columns needed based on dB bom
-    df = frames.extract_bom_columns(df)
-    # delete empty rows and columns
-    df = frames.delete_empty_rows(df)
-    df = frames.delete_empty_columns(df)
-    # set datatype for columns
-    df = frames.set_bom_column_datatype(df)
-    # merge alternative components to primary
-    df = frames.merge_alternative(df)
+    steps_to_get_bom_data_from_excel_sheet("EBOM")
 
     # *** Clean up ebom table ***
     # remove empty designator data
@@ -211,11 +152,64 @@ def process_ebom_for_db_upload():
     df = frames.remove_part_number_from_description(df)
 
     # *** write eBOM data to file ***
+    steps_to_write_bom_to_single_sheet_excel_file("EBOM DB ")
+
+    return None
+
+
+def steps_to_read_an_excel_file() -> None:
+    global excel_data
+    global file_name
+    # get path to input data folder
+    folder_path = paths.get_path_to_input_file_folder()
+    # get Excel file name to process
+    file_name = paths.get_selected_excel_file_name(folder_path)
+    # read excel file data
+    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    return None
+
+
+def steps_to_get_user_selected_excel_sheet() -> None:
+    global excel_data
+    global df
+    # extract user selected Excel file sheet
+    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # only keep cost data for build on interest
+    df = frames.select_build(df)
+    return None
+
+
+def steps_to_get_bom_data_from_excel_sheet(bom_type: str) -> None:
+    global df
+    # drop rows above cBOM header
+    df = frames.search_and_set_bom_header(df)
+    # determine version of BOM template as it will determine how BOM cleanup will happen
+    frames.determine_bom_template_version(df, bom_type)
+    # keep only the columns needed based on cBOM cost walk
+    if bom_type == "CW":
+        df = frames.extract_cost_walk_columns(df)
+    elif bom_type == "CBOM":
+        df = frames.extract_bom_columns(df)
+    elif bom_type == "EBOM":
+        df = frames.extract_bom_columns(df)
+    else:
+        raise ValueError(f"BOM_TYPE = '{bom_type}' is not supported")
+    # delete empty rows and columns
+    df = frames.delete_empty_rows(df)
+    df = frames.delete_empty_columns(df)
+    # set datatype for columns
+    df = frames.set_bom_column_datatype(df)
+    # merge alternative components to one row
+    df = frames.merge_alternative(df)
+    return None
+
+
+def steps_to_write_bom_to_single_sheet_excel_file(prefix: str) -> None:
+    global file_name
     # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     # Set Excel file name
-    file_name = "dBeBOM_" + file_name
+    file_name = prefix + file_name
     # write Excel file data
     files.write_single_sheet_excel_file_data(folder_path, file_name, df)
-
     return None

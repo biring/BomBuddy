@@ -243,6 +243,7 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
     import Levenshtein
 
     max_threshold_for_valid_match = 5.0  # 0.0 is a perfect match, higher is lesser match
+    perfect_match = 0.0
 
     # Initialize variables to keep track of the best match and its distance
     best_match = "  "
@@ -260,6 +261,11 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
         if (min_distance > distance) and (distance < max_threshold_for_valid_match):
             min_distance = distance
             best_match = ref_string
+
+        # stop checking once a perfect match is found
+        if min_distance == perfect_match:
+            break
+
 
     # Return the best matching reference string
     return best_match
@@ -286,6 +292,7 @@ def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
     best_match = " "
     max_similarity = 0
     minimum_similarity_threshold = 0.5  # 1.0 is a perfect match. 0.0 is no match
+    perfect_match = 1.0
 
     # Iterate through each reference string
     for ref_string in reference_strings:
@@ -301,6 +308,10 @@ def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
         if (similarity > max_similarity) and (similarity > minimum_similarity_threshold):
             max_similarity = similarity
             best_match = ref_string
+
+        # stop checking once a perfect match is found
+        if similarity == perfect_match:
+            break
 
     return best_match
 

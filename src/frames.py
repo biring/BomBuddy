@@ -29,11 +29,11 @@ bom_template_version = 1  # default is set to 1 as 1 is not supported
 
 cost_walk_header_list = []
 
-cost_walk_header_list_v2 = [itemHdr, designatorHdr, componentHdr, typeHdr, descriptionHdr,
-                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+cost_walk_header_list_v2 = [itemHdr, designatorHdr, componentHdr, descriptionHdr,
+                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr, typeHdr]
 
-cost_walk_header_list_v3 = [itemHdr, designatorHdr, componentHdr, pkgHdr, descriptionHdr,
-                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr]
+cost_walk_header_list_v3 = [itemHdr, designatorHdr, componentHdr, descriptionHdr,
+                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr,pkgHdr]
 
 bom_header_list = []
 
@@ -107,7 +107,7 @@ component_dict = {
     "Spring": [
         "Spring", "Touch spring"],
     "Switch": [
-        "Switch", "Tact Switch"],
+        "Switch", "Tact Switch", "Slide Switch"],
     "TCO": [
         "TCO"],
     "Thermistors": [
@@ -202,7 +202,9 @@ def determine_bom_template_version(df: pd.DataFrame, bom=str) -> None:
     global criticalHdr
     global classHdr
 
-    if bom == "CBOM" or bom == "EBOM":
+    if bom == "CW":
+        bom_type = "CBOM"
+    elif bom == "CBOM" or bom == "EBOM":
         bom_type = bom
     else:
         raise ValueError(f"BOM type = '{type}' not supported")
@@ -854,7 +856,7 @@ def cleanup_part_number(df: pd.DataFrame) -> pd.DataFrame:
     # remove duplicate spaces
     df[partNoHdr] = df[partNoHdr].str.replace(r' {2,}', ' ', regex=True)
 
-    # elements are comma separated1
+    # elements are comma separated
     df[partNoHdr] = df[partNoHdr].str.replace(r'\n', ',', regex=True)
 
     print('Done.')
