@@ -3,3 +3,5 @@ Install pip 24.0
 Install panda 2.2.0
 Install openpyxl 3.1.2
 Install pyarrow 15.0.0
+Install Levenshtein 0.25.0
+

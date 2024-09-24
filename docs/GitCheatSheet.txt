@@ -15,8 +15,9 @@ git status
 git add <file-name>
 	Add files to staging area one at a time
 	OR "-A" to add all files to the staging area	
-git commit -m "MessageLine1" -m"messageLine2" ....
+git commit -m "MessageLine1" -m "messageLine2" ....
 	Add commit message
+
 git pull origin master
 	Make sure you are working of the latest version of the master
 	Other developers may have made changes 
