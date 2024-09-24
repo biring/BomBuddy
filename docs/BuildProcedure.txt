@@ -1,7 +1,5 @@
-Install Python 3.12.0
-Install pip 24.0
+Install Python 3.12.6
+Install pip 24.2
 Install panda 2.2.0
-Install openpyxl 3.1.2
-Install pyarrow 15.0.0
-Install Levenshtein 0.25.0
-
+Install openpyxl 3.1.5
+Install Levenshtein 0.25.1
