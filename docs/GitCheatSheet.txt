@@ -23,7 +23,7 @@ git pull origin master
 	Other developers may have made changes 
 git push origin <branch>
 	Push changes to remote repository
-git log --oneline -5
+git log -2
 	Verify commit and hash is good
 git status
 	Verify branch is upto date
