@@ -13,18 +13,15 @@ def run_tests():
         tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tests')
 
         # Run unittest and capture output
-        result = subprocess.run(
-            [sys.executable, '-m', 'unittest', 'discover', '-s', tests_dir, '-p', 'test_*.py'],
-            check=False, capture_output=True, text=True)
+        result = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', tests_dir, '-p', 'test_*.py'])
         if result.returncode == 0:
             print("Unit test passed.")
             return 0  # Indicate success
         else:
-            print("Unit tests failed.")
-            print(result.stderr)
+            print("Unit tests FAILED.")
             return 1  # Indicate failure
     except subprocess.CalledProcessError as e:
-        print(f"Unit tests failed: {e}")
+        print(f"ERROR during unit test: {e}")
         return e.returncode
 
 if __name__ == "__main__":

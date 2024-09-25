@@ -19,11 +19,13 @@ fi
 
 # Stage version.py for commit
 git add C:/Code/ElectricalBomAnalyser/src/version.py
+echo ""
 if [ $? -ne 0 ]; then
     echo "Abort pre-commit script: Stage version.py for commit FAILED"
     exit 1
 else
-    echo "version.py staged for commit"
+    echo "Staged version.py for commit due to build number increment."
 fi
 
+echo ""
 echo "Done with pre-commit"
