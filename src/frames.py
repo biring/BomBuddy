@@ -360,6 +360,12 @@ def split_manufacturers_to_separate_rows(original_df):
     # Get the index of the quantity column
     qty_index = columns.get_single_header_index(original_df, 'Qty', False)
 
+    # Get the index of the price column
+    price_index = columns.get_single_header_index(original_df, 'U/P RMB W/O VAT', False)
+
+    # Get the index of the description column
+    description_index = columns.get_single_header_index(original_df, 'Description', False)
+
     # Create an empty data frame with same header
     updated_df = pd.DataFrame(columns=original_df.columns)
 
@@ -368,13 +374,16 @@ def split_manufacturers_to_separate_rows(original_df):
         # get values we need
         component_string = row.iloc[component_index]
         name_string = row.iloc[name_index]
+        description_string = row.iloc[description_index]
         # part number may be all numbers so force data to string
         part_number_string = str(row.iloc[part_number_index])
         name_list = name_string.split('\n')
         part_number_list = part_number_string.split('\n')
+        description_list = description_string.split('\n')
         # remove any "" items from the list.
         name_list = [item for item in name_list if item != ""]
         part_number_list = [item for item in part_number_list if item != ""]
+        description_list = [item for item in description_list if item != ""]
 
         # number of manufacturer names must be the same as manufacturer part numbers
         if len(name_list) != len(part_number_list):
@@ -406,6 +415,11 @@ def split_manufacturers_to_separate_rows(original_df):
                 # Except for first occurrence, all other rows have zero quantity
                 if i != 0:
                     new_row.iloc[qty_index] = 0
+                # If version 3.0, set price to 0 for all rows except the first
+                if bom_template_version == 3.0 and i != 0:
+                    new_row.iloc[price_index] = 0
+                if bom_template_version == 3.0:
+                    new_row.iloc[description_index] = description_list[i]
                 # add row to updated data frame
                 updated_df.loc[len(updated_df)] = new_row
 
@@ -529,7 +543,7 @@ def normalize_component_type_label(df):
         # Get component type
         component_type_name = row.iloc[type_index]
         # ignore SMD, DIP if found in component type name as they add not value
-        component_string = component_type_name.replace("SMD", "").replace("DIP", "")
+        component_string = component_type_name.replace("SMD", "").replace("DIP", "").replace("ALT", "")
         # Get all values from the component dict
         value_list = [value for sublist in component_dict.values() for value in sublist]
         # Get the best matched value
@@ -611,6 +625,68 @@ def remove_part_number_from_description(data_frame):
     return data_frame
 
 
+def primary_above_alternative(df):
+    """
+    Move primary component above alternatives based on quantity.
+    After adding a row to the top, swap the first and second rows for `pkgHdr`, `itemHdr`, and `componentHdr`.
+
+    The primary component (non-zero quantity) is moved to the top of each part group, followed by its alternatives.
+
+    Args:
+        df (DataFrame): The input DataFrame to process.
+
+    Returns:
+        mdf (DataFrame): The modified DataFrame with primary components above alternatives.
+    """
+    print()
+    print('Moving primary item above alternative items...')
+
+    # Initialize an empty DataFrame to collect rows (df_temp)
+    df_temp = pd.DataFrame(columns=df.columns)
+    mdf = pd.DataFrame(columns=df.columns)
+
+    # Not required for template version 2.0
+    if bom_template_version == 2.0:
+        mdf = df
+
+    # Only needed for template version 3.0
+    elif bom_template_version == 3.0:
+
+        # Read each row one at a time
+        for _, row in df.iterrows():
+            # If df_temp is not empty, check for designator change or empty designatorHdr
+            if (not df_temp.empty and (df_temp[designatorHdr].iloc[0] != row[designatorHdr])) or row[designatorHdr] == "":
+                # Merge current df_temp into mdf
+                mdf = pd.concat([mdf, df_temp], axis=0, ignore_index=True)
+                # Reset df_temp for the next part group
+                df_temp = pd.DataFrame(columns=df.columns)
+
+            # If row quantity is non-zero, move it to the top of the current group
+            if row[qtyHdr] != 0:
+                # Add row to the top of df_temp
+                df_temp = pd.concat([pd.DataFrame(row).T, df_temp], axis=0, ignore_index=True)
+
+                # After adding to the top, check if we have at least two rows to swap
+                if len(df_temp) > 1:
+                    # Select columns to swap
+                    cols_to_swap = [pkgHdr, itemHdr, componentHdr]
+
+                    # Swap values between the first and second rows for the selected columns
+                    df_temp.loc[0, cols_to_swap], df_temp.loc[1, cols_to_swap] = \
+                        df_temp.loc[1, cols_to_swap].values, df_temp.loc[0, cols_to_swap].values
+            else:
+                # Move row to the bottom of the current group if quantity is zero
+                df_temp = pd.concat([df_temp, pd.DataFrame(row).T], axis=0, ignore_index=True)
+
+        # After the last group, merge the remaining df_temp into mdf
+        if not df_temp.empty:
+            mdf = pd.concat([mdf, df_temp], axis=0, ignore_index=True)
+
+    # User interface message
+    print("Done")
+
+    return mdf
+
 def merge_alternative(df):
     """
     merge alternative items with primary item row using "/n" delimiter.
@@ -639,7 +715,7 @@ def merge_alternative(df):
     for _, row in df.iterrows():
         if alt_ref_string not in row[componentHdr]:
 
-            # first time around no need to concat as there is not data
+            # first time around no need to concat as there is no data
             if len(df_merger) != 0:
                 df_new = pd.concat([df_new, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
             df_merger = row
@@ -648,7 +724,7 @@ def merge_alternative(df):
             prev_pn = row[partNoHdr]
         else:
             if row[descriptionHdr]:
-                df_merger[descriptionHdr] += "\n" + row[designatorHdr]
+                df_merger[descriptionHdr] += "\n" + row[descriptionHdr]
             else:
                 df_merger[descriptionHdr] += "\n" + prev_desc
 
@@ -761,7 +837,7 @@ def cleanup_description(df: pd.DataFrame) -> pd.DataFrame:
     print('Cleaning up description column data... ')
 
     # remove duplicate spaces
-    df[descriptionHdr] = df[descriptionHdr].str.replace(r'\s+', ' ', regex=True)
+    df[descriptionHdr] = df[descriptionHdr].str.replace(r'[^\S\r\n]+', ' ', regex=True)
 
     # special 'characters' cases...
     df[descriptionHdr] = df[descriptionHdr].str.replace(r'[，]', ',', regex=True)
