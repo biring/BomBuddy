@@ -6,27 +6,51 @@ RESET GIT CONNECTION
 git config --global --unset-all remote.origin.proxy
 	Resolve error: unable to access 'https://github.com/...': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
 
-COMMIT CHANGES TO REMOTE
-git diff
-	See the changes made to the code
-	This helps to create a list of commit message by file
-git status
-	List of files that have been modified
-git add <file-name>
-	Add files to staging area one at a time
-	OR "-A" to add all files to the staging area	
-git commit -m "MessageLine1" -m "messageLine2" ....
-	Add commit message
+GIT MERGE WORKING INTO MAIN
+1. Check out the main branch
+git checkout main
+2. Pull the latest changes from remote main
+git pull origin main --rebase       # Optionally rebase to avoid unnecessary merge commits
+3. Preview changes between main and working branches (optional, but recommended)
+git diff main..working              # See changes before merging
+4. Merge working into main
+git merge working                   # Or use --no-ff for a merge commit
+5. Push changes to the remote main branch
+git push origin main
+6. Fetch latest changes from the remote (optional, if you want to check for updates after pushing)
+git fetch                           # Not strictly necessary after a successful push
+7. Verify the update by viewing the remote main branch's commit history
+git log origin/main --oneline       # View the recent commits
 
-git pull origin master
-	Make sure you are working of the latest version of the master
-	Other developers may have made changes 
-git push origin <branch>
-	Push changes to remote repository
-git log -2
-	Verify commit and hash is good
-git status
-	Verify branch is upto date
+
+COMMIT CHANGES TO REMOTE/ORIGIN/WORKING
+1. Check which branch you're on
+git branch -a           # List all branches
+git branch              # List local branches
+git branch -r           # List remote branches
+2. Review the changes made to the code
+git diff                # See changes not yet staged
+git diff --staged       # See changes that have been staged
+3. See the status of modified files
+git status              # Check status of files
+git status -s           # Short status summary
+4. Stage changes (add files)
+git add <file-name>     # Stage a specific file
+git add -A              # Stage all changes
+git add .               # Stage changes in the current directory
+5. Commit the staged changes
+git commit -m "Short description" -m "Detailed explanation of changes"
+git commit --verbose    # See the diff of staged changes
+6. Pull the latest changes (to avoid conflicts)
+git pull origin master --rebase  # Avoid merge commits by rebasing
+7. Push changes to the remote branch
+git push origin <branch>  # Push changes to the correct remote branch
+8. Verify your recent commit(s)
+git log -2              # Show last two commits
+git log --oneline       # Compact log view, shows commit hash and message
+9. Check the status again to confirm everything is synced
+git status              # Confirm everything is up-to-date after pushing
+
 
 FEATURE DEVELOPMENT - CREATE NEW LOCAL BRANCH
 git branch <feature_branch>
