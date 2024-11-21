@@ -1,21 +1,49 @@
-import pandas as pd
 import paths
 import files
 import strings
 import frames
-from enumeration import BomType, FilePrefix
+from src.enumeration import SourceFileType, OutputFileType, BomTempVer
+
 
 def sequence_cbom_for_cost_walk() -> None:
 
+    source_file_type = SourceFileType.CB
+    output_file_type = OutputFileType.CW
+
     # *** read Excel data file ***
-    excel_data, file_name = steps_to_read_an_excel_file()
+    # get path to input data folder
+    folder_path = paths.get_path_to_input_file_folder()
+    # get Excel file name to process
+    file_name = paths.get_selected_excel_file_name(folder_path)
+    # read excel file data
+    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
 
     # *** Extract cbom sheet to process ***
-    excel_data, df = steps_to_get_user_selected_excel_sheet(excel_data)
+    # extract user selected Excel file sheet
+    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # only keep cost data for build on interest
+    df = frames.select_build(df)
 
     # *** Extract cbom table ***
-    # drop rows above cBOM header
-    df = steps_to_get_bom_data_from_excel_sheet(df, BomType.CW)
+    # drop rows above BOM header and set top row as header
+    df = frames.search_and_set_bom_header(df)
+    # determine version of BOM template as it will determine how BOM cleanup will happen
+    bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
+    # get source BOM header labels as they are different depending upon BOM template version and source BOM type
+    source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    # keep only the columns needed based on cBOM cost walk
+    df = frames.get_bom_columns(df, source_bom_header)
+    # delete empty rows and columns
+    df = frames.delete_empty_rows(df)
+    df = frames.delete_empty_columns(df)
+    # set datatype for columns
+    df = frames.set_bom_column_datatype(df)
+    # primary component should be first
+    df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
+    # merge alternative components to one row
+    df = frames.merge_alternative(df)
 
     # *** Clean up data ***
     # remove zero quantity data
@@ -26,21 +54,53 @@ def sequence_cbom_for_cost_walk() -> None:
     df = frames.split_multiple_quantity(df)
 
     # *** write cBOM data to file ***
-    steps_to_write_bom_to_single_sheet_excel_file(file_name, df, FilePrefix.CW)
+    # get path to output data folder
+    folder_path = paths.get_path_to_outputs_folder()
+    # Set Excel file name
+    file_name = OutputFileType.CW.value + file_name
+    # write Excel file data
+    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
 
     return None
 
 
 def sequence_cbom_for_db_upload() -> None:
 
+    source_file_type = SourceFileType.CB
+    output_file_type = OutputFileType.dB_CB
+
     # *** read cBOM Excel data file ***
-    excel_data, file_name = steps_to_read_an_excel_file()
+    # get path to input data folder
+    folder_path = paths.get_path_to_input_file_folder()
+    # get Excel file name to process
+    file_name = paths.get_selected_excel_file_name(folder_path)
+    # read excel file data
+    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
 
     # *** Extract sheet to process ***
-    excel_data, df = steps_to_get_user_selected_excel_sheet(excel_data)
+    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # only keep cost data for build on interest
+    df = frames.select_build(df)
 
     # *** Extract cbom data ***
-    df = steps_to_get_bom_data_from_excel_sheet(df, BomType.CBOM)
+    # drop rows above BOM header and set top row as header
+    df = frames.search_and_set_bom_header(df)
+    # determine version of BOM template as it will determine how BOM cleanup will happen
+    bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
+    # get source BOM header labels as they are different depending upon BOM template version and source BOM type
+    source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    df = frames.get_bom_columns(df, source_bom_header)
+    # delete empty rows and columns
+    df = frames.delete_empty_rows(df)
+    df = frames.delete_empty_columns(df)
+    # set datatype for columns
+    df = frames.set_bom_column_datatype(df)
+    # primary component should be first
+    df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
+    # merge alternative components to one row
+    df = frames.merge_alternative(df)
 
     # *** Clean up cbom data ***
     # remove empty designator data
@@ -70,7 +130,7 @@ def sequence_cbom_for_db_upload() -> None:
     frames.check_qty_matched_ref_des_count(df)
 
     # separate manufacturers to separate rows
-    df = frames.split_manufacturers_to_separate_rows(df)
+    df = frames.split_manufacturers_to_separate_rows(df, bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
     # clean up manufacturer name
     df = frames.cleanup_manufacturer(df)
 
@@ -78,26 +138,58 @@ def sequence_cbom_for_db_upload() -> None:
     df = frames.cleanup_part_number(df)
 
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
-    df = frames.merge_type_data_with_description(df)
+    df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
     df = frames.remove_part_number_from_description(df)
 
     # *** write scrubbed cBOM data to file ***
-    steps_to_write_bom_to_single_sheet_excel_file(file_name, df, FilePrefix.CBOM)
+    # get path to output data folder
+    folder_path = paths.get_path_to_outputs_folder()
+    # Set Excel file name
+    file_name = OutputFileType.dB_CB.value + file_name
+    # write Excel file data
+    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
 
     return None
 
 
 def sequence_ebom_for_db_upload():
 
+    source_file_type = SourceFileType.EB
+    output_file_type = OutputFileType.db_EB
+
     # *** read Excel data file ***
-    excel_data, file_name = steps_to_read_an_excel_file()
+    # get path to input data folder
+    folder_path = paths.get_path_to_input_file_folder()
+    # get Excel file name to process
+    file_name = paths.get_selected_excel_file_name(folder_path)
+    # read excel file data
+    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
 
     # *** Extract cbom sheet to process ***
-    excel_data, df = steps_to_get_user_selected_excel_sheet(excel_data)
+    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # only keep cost data for build on interest
+    df = frames.select_build(df)
 
     # *** Extract ebom table ***
-    df = steps_to_get_bom_data_from_excel_sheet(df, BomType.EBOM)
+    # drop rows above BOM header and set top row as header
+    df = frames.search_and_set_bom_header(df)
+    # determine version of BOM template as it will determine how BOM cleanup will happen
+    bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
+    # get source BOM header labels as they are different depending upon BOM template version and source BOM type
+    source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    df = frames.get_bom_columns(df, source_bom_header)
+    # delete empty rows and columns
+    df = frames.delete_empty_rows(df)
+    df = frames.delete_empty_columns(df)
+    # set datatype for columns
+    df = frames.set_bom_column_datatype(df)
+    # primary component should be first
+    df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
+    # merge alternative components to one row
+    df = frames.merge_alternative(df)
 
     # *** Clean up ebom table ***
     # remove empty designator data
@@ -130,7 +222,7 @@ def sequence_ebom_for_db_upload():
     df = frames.drop_rows_with_unwanted_ebom_items(df)
 
     # separate manufacturers to separate rows
-    df = frames.split_manufacturers_to_separate_rows(df)
+    df = frames.split_manufacturers_to_separate_rows(df, bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
     # clean up manufacturer name
     df = frames.cleanup_manufacturer(df)
 
@@ -138,78 +230,16 @@ def sequence_ebom_for_db_upload():
     df = frames.cleanup_part_number(df)
 
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
-    df = frames.merge_type_data_with_description(df)
+    df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
     df = frames.remove_part_number_from_description(df)
 
     # *** write eBOM data to file ***
-    steps_to_write_bom_to_single_sheet_excel_file(file_name, df, FilePrefix.EBOM)
-
-    return None
-
-
-def steps_to_read_an_excel_file() -> [str, str]:
-
-    # get path to input data folder
-    folder_path = paths.get_path_to_input_file_folder()
-    # get Excel file name to process
-    file_name = paths.get_selected_excel_file_name(folder_path)
-    # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
-    return excel_data, file_name
-
-
-def steps_to_get_user_selected_excel_sheet(excel_data) -> (str, pd.DataFrame):
-
-    # extract user selected Excel file sheet
-    df = files.get_user_selected_excel_file_sheet(excel_data)
-    # only keep cost data for build on interest
-    df = frames.select_build(df)
-    return excel_data, df
-
-
-def steps_to_get_bom_data_from_excel_sheet(df, bom_type: BomType) -> pd.DataFrame:
-    """
-    Processes the BOM data from an Excel sheet based on the provided BOM type.
-
-    Args:
-        df (pd.DataFrame): The dataframe containing raw BOM data.
-        bom_type (BomType): The BOM type (CW, CBOM, or EBOM) to guide the cleanup process.
-
-    Returns:
-        pd.DataFrame: The processed BOM data ready for further steps.
-    """
-
-    # drop rows above cBOM header
-    df = frames.search_and_set_bom_header(df)
-    # determine version of BOM template as it will determine how BOM cleanup will happen
-    frames.determine_bom_template_version(df, bom_type.value)
-    # keep only the columns needed based on cBOM cost walk
-    if bom_type == BomType.CW:
-        df = frames.extract_cost_walk_columns(df)
-    elif bom_type == BomType.CBOM:
-        df = frames.extract_bom_columns(df)
-    elif bom_type == BomType.EBOM:
-        df = frames.extract_bom_columns(df)
-    else:
-        raise ValueError(f"BOM_TYPE = '{bom_type}' is not supported")
-    # delete empty rows and columns
-    df = frames.delete_empty_rows(df)
-    df = frames.delete_empty_columns(df)
-    # set datatype for columns
-    df = frames.set_bom_column_datatype(df)
-    # primary component should be first
-    df = frames.primary_above_alternative(df)
-    # merge alternative components to one row
-    df = frames.merge_alternative(df)
-    return df
-
-
-def steps_to_write_bom_to_single_sheet_excel_file(file_name: str, df: pd.DataFrame, prefix: FilePrefix) -> None:
     # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     # Set Excel file name
-    file_name = prefix.value + file_name
+    file_name = OutputFileType.db_EB.value + file_name
     # write Excel file data
     files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+
     return None
