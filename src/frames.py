@@ -1,9 +1,13 @@
 # This file has functions to manipulate both rows and columns in a data frame
+from typing import Type
+
 import pandas as pd
 
 import columns
 import header
 import rows
+
+from src.enumeration import SourceFileType, OutputFileType, BomTempVer
 
 # Standardized header names used across eBOM, cBOM and cost walk. They are based off the bom template v2.0 and v3.0
 itemHdr = "Item"
@@ -24,18 +28,11 @@ boardHdr = "Board"
 # strings to look for when searching for the bom header
 header_search_string_list = [designatorHdr, manufacturerHdr, qtyHdr]
 
-bom_type = ""
-bom_template_version = 1  # default is set to 1 as 1 is not supported
-
-cost_walk_header_list = []
-
 cost_walk_header_list_v2 = [itemHdr, designatorHdr, componentHdr, descriptionHdr,
                             manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr, typeHdr]
 
 cost_walk_header_list_v3 = [itemHdr, designatorHdr, componentHdr, descriptionHdr,
-                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr,pkgHdr]
-
-bom_header_list = []
+                            manufacturerHdr, partNoHdr, qtyHdr, unitPriceHdr, pkgHdr]
 
 cbom_header_list_v2 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designatorHdr,
                        criticalHdr, manufacturerHdr, partNoHdr, unitPriceHdr, typeHdr]
@@ -187,56 +184,93 @@ def search_and_set_bom_header(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def determine_bom_template_version(df: pd.DataFrame, bom=str) -> None:
+def get_bom_template_version(df: pd.DataFrame, enum_bom_temp_version: Type[BomTempVer]) -> BomTempVer:
     # user interface message
     print()
-    print("Determining what version of the template was used generate the BOM... ")
-
-    global bom_type
-    global bom_template_version
-    global bom_header_list
-    global cost_walk_header_list
-
-    global typeHdr
-    global pkgHdr
-    global criticalHdr
-    global classHdr
-
-    if bom == "CW":
-        bom_type = "CBOM"
-    elif bom == "CBOM" or bom == "EBOM":
-        bom_type = bom
-    else:
-        raise ValueError(f"BOM type = '{type}' not supported")
-
-    # get the header row
-    temp_header = df.columns
+    print("Determining BOM template version... ")
 
     # determine the BOM template version
-    if criticalHdr in temp_header:
-        bom_template_version = 2
-        cost_walk_header_list = cost_walk_header_list_v2
-        if bom_type == "EBOM":
-            bom_header_list = ebom_header_list_v2
-        elif bom_type == "CBOM":
-            bom_header_list = cbom_header_list_v2
-
-    elif classHdr in temp_header:
-        bom_template_version = 3
-        cost_walk_header_list = cost_walk_header_list_v3
-        if bom_type == "EBOM":
-            bom_header_list = ebom_header_list_v3
-        elif bom_type == "CBOM":
-            bom_header_list = cbom_header_list_v3
+    if criticalHdr in df.columns:
+        bom_temp_ver = enum_bom_temp_version.v2
+    elif classHdr in df.columns:
+        bom_temp_ver = enum_bom_temp_version.v3
     else:
-        raise ValueError("Application not able to determine the version of BOM template "
-                         "used for input CBOM data file.\nThis application can only process "
-                         "data for BOM template version 2.0 and 3.0")
+        raise ValueError("This application can only process data for BOM template version 2.0 and 3.0")
 
     # user interface message
-    print(f"Detected BOM template version = {bom_template_version}")
+    print(f"BOM template version = {bom_temp_ver}")
 
-    return
+    return bom_temp_ver
+
+
+def get_source_bom_header_labels(
+        bom_temp_ver: BomTempVer,
+        enum_bom_temp_version: Type[BomTempVer],
+        source_file_type: SourceFileType,
+        enum_source_file_type: Type[SourceFileType]) -> list[str]:
+    # user interface message
+    print()
+    print("Determining source file BOM header format... ")
+
+    source_bom_header_labels = []
+
+    # Determine the BOM template version
+    if bom_temp_ver == enum_bom_temp_version.v2:
+        if source_file_type == enum_source_file_type.EB:
+            source_bom_header_labels = ebom_header_list_v2
+        elif source_file_type == enum_source_file_type.CB:
+            source_bom_header_labels = cbom_header_list_v2
+    elif bom_temp_ver == enum_bom_temp_version.v3:
+        if source_file_type == enum_source_file_type.EB:
+            source_bom_header_labels = ebom_header_list_v3
+        elif source_file_type == enum_source_file_type.CB:
+            source_bom_header_labels = cbom_header_list_v3
+
+    if not source_bom_header_labels:
+        raise ValueError(f"Application was not able to determine the source bom header. "
+                         f"BOM template = {bom_temp_ver}. Source BOM type = {source_file_type}")
+
+    # User interface message
+    print(f"Source file BOM header format = {source_bom_header_labels}")
+
+    return source_bom_header_labels
+
+
+def get_output_bom_header_labels(
+        bom_temp_ver: BomTempVer,
+        enum_bom_temp_version: Type[BomTempVer],
+        output_file_type: OutputFileType,
+        enum_output_file_type: Type[OutputFileType]) -> list[str]:
+    # user interface message
+    print()
+    print("Determining output file BOM header labels... ")
+
+    output_bom_header_labels = []
+
+    if bom_temp_ver == enum_bom_temp_version.v2:
+        if output_file_type == enum_output_file_type.CW:
+            output_bom_header_labels = cost_walk_header_list_v2
+        elif output_file_type == enum_output_file_type.dB_CB:
+            output_bom_header_labels = cbom_header_list_v2
+        elif output_file_type == enum_output_file_type.db_EB:
+            output_bom_header_labels = ebom_header_list_v2
+
+    elif bom_temp_ver == enum_bom_temp_version.v3:
+        if output_file_type == enum_output_file_type.CW:
+            output_bom_header_labels = cost_walk_header_list_v3
+        elif output_file_type == enum_output_file_type.dB_CB:
+            output_bom_header_labels = cbom_header_list_v3
+        elif output_file_type == enum_output_file_type.db_EB:
+            output_bom_header_labels = ebom_header_list_v3
+
+    if not output_bom_header_labels:
+        raise ValueError(f"Application was not able to determine the source bom header. "
+                         f"BOM template = '{bom_temp_ver}'. Output data format = '{output_file_type}'")
+
+    # user interface message
+    print(f"Output BOM header = {output_bom_header_labels}")
+
+    return output_bom_header_labels
 
 
 def delete_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -320,7 +354,12 @@ def set_bom_column_datatype(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def split_manufacturers_to_separate_rows(original_df):
+def split_manufacturers_to_separate_rows(
+        original_df: pd.DataFrame,
+        bom_template_version: BomTempVer,
+        enum_bom_temp_version: Type[BomTempVer],
+        source_file_type: SourceFileType,
+        enum_source_file_type: Type[SourceFileType]) -> pd.DataFrame:
     """
     Split manufacturer names and corresponding part numbers to separate rows in the DataFrame.
 
@@ -343,9 +382,9 @@ def split_manufacturers_to_separate_rows(original_df):
     exception_list = []
 
     # List of component type that do not need to be split
-    if bom_template_version == 2.0:
+    if bom_template_version == enum_bom_temp_version.v2:
         exception_list = ["Res", "Cap", "Ind"]
-    elif bom_template_version == 3.0:
+    elif bom_template_version == enum_bom_temp_version.v3:
         exception_list = []  # for version 3.0 we separate all alternatives
 
     # Get the index of manufacturer name column
@@ -361,7 +400,10 @@ def split_manufacturers_to_separate_rows(original_df):
     qty_index = columns.get_single_header_index(original_df, 'Qty', False)
 
     # Get the index of the price column
-    price_index = columns.get_single_header_index(original_df, 'U/P RMB W/O VAT', False)
+    if source_file_type == enum_source_file_type.CB:
+        price_index = columns.get_single_header_index(original_df, 'U/P RMB W/O VAT', False)
+    else:
+        price_index = 0
 
     # Get the index of the description column
     description_index = columns.get_single_header_index(original_df, 'Description', False)
@@ -625,7 +667,9 @@ def remove_part_number_from_description(data_frame):
     return data_frame
 
 
-def primary_above_alternative(df):
+def primary_above_alternative(df: pd.DataFrame,
+                              bom_template_version: BomTempVer,
+                              enum_bom_temp_version: Type[BomTempVer]) -> pd.DataFrame:
     """
     Move primary component above alternatives based on quantity.
     After adding a row to the top, swap the first and second rows for `pkgHdr`, `itemHdr`, and `componentHdr`.
@@ -633,6 +677,8 @@ def primary_above_alternative(df):
     The primary component (non-zero quantity) is moved to the top of each part group, followed by its alternatives.
 
     Args:
+        enum_bom_temp_version:
+        bom_template_version:
         df (DataFrame): The input DataFrame to process.
 
     Returns:
@@ -646,16 +692,17 @@ def primary_above_alternative(df):
     mdf = pd.DataFrame(columns=df.columns)
 
     # Not required for template version 2.0
-    if bom_template_version == 2.0:
+    if bom_template_version == enum_bom_temp_version.v2:
         mdf = df
 
     # Only needed for template version 3.0
-    elif bom_template_version == 3.0:
+    elif bom_template_version == enum_bom_temp_version.v3:
 
         # Read each row one at a time
         for _, row in df.iterrows():
             # If df_temp is not empty, check for designator change or empty designatorHdr
-            if (not df_temp.empty and (df_temp[designatorHdr].iloc[0] != row[designatorHdr])) or row[designatorHdr] == "":
+            if (not df_temp.empty and (df_temp[designatorHdr].iloc[0] != row[designatorHdr])) or row[
+                designatorHdr] == "":
                 # Merge current df_temp into mdf
                 mdf = pd.concat([mdf, df_temp], axis=0, ignore_index=True)
                 # Reset df_temp for the next part group
@@ -687,7 +734,8 @@ def primary_above_alternative(df):
 
     return mdf
 
-def merge_alternative(df):
+
+def merge_alternative(df_in):
     """
     merge alternative items with primary item row using "/n" delimiter.
 
@@ -708,16 +756,17 @@ def merge_alternative(df):
     prev_pn = ''
 
     # Create an empty data frame with same header
-    df_new = pd.DataFrame(columns=df.columns)
-    df_merger = df_new
+    df_out = pd.DataFrame(columns=df_in.columns)
+    df_merger = df_out
 
     # read each row on at a time
-    for _, row in df.iterrows():
+    for _, row in df_in.iterrows():
+
         if alt_ref_string not in row[componentHdr]:
 
             # first time around no need to concat as there is no data
             if len(df_merger) != 0:
-                df_new = pd.concat([df_new, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
+                df_out = pd.concat([df_out, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
             df_merger = row
             prev_desc = row[designatorHdr]
             prev_mfg = row[manufacturerHdr]
@@ -739,15 +788,15 @@ def merge_alternative(df):
                 df_merger[partNoHdr] += "\n" + prev_pn
 
     # last row merger needs to be done outside the for loop
-    df_new = pd.concat([df_new, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
+    df_out = pd.concat([df_out, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
 
     # user interface message
-    print(f"Number of row in the BOM changed from {df.shape[0]} to {df_new.shape[0]}")
+    print(f"Number of row in the BOM changed from {df_in.shape[0]} to {df_out.shape[0]}")
 
-    return df_new
+    return df_out
 
 
-def merge_type_data_with_description(df):
+def merge_type_data_with_description(df: pd.DataFrame, bom_template_version: BomTempVer):
     # message
     print()
     print('Merging type column data with description column data... ')
@@ -756,9 +805,9 @@ def merge_type_data_with_description(df):
     part_number_index = -1
 
     # Get the index of the type column
-    if bom_template_version == 2.0:
+    if bom_template_version == BomTempVer.v2:
         part_number_index = columns.get_single_header_index(df, typeHdr, True)
-    elif bom_template_version == 3.0:
+    elif bom_template_version == BomTempVer.v3:
         part_number_index = columns.get_single_header_index(df, pkgHdr, True)
 
     # Get the index of description column
@@ -797,36 +846,19 @@ def split_multiple_quantity(data_frame: pd.DataFrame) -> pd.DataFrame:
     return data_frame
 
 
-def extract_cost_walk_columns(df: pd.DataFrame) -> pd.DataFrame:
+def get_bom_columns(df: pd.DataFrame, source_bom_header: list[str]) -> pd.DataFrame:
     # user interface message
     print()
-    print('Extracting columns for cost walk...')
+    print('Extracting BOM columns... ')
 
-    mdf = header.standardize_header_names(df, cost_walk_header_list)
+    mdf = header.standardize_header_names(df, source_bom_header)
 
     # Reorder header based on list and drop remaining columns
-    mdf = mdf[cost_walk_header_list]
+    mdf = mdf[source_bom_header]
 
     # user interface message
     header_strings = ", ".join(mdf.columns)
-    print(f'Columns header are [{header_strings}]')
-
-    return mdf
-
-
-def extract_bom_columns(df: pd.DataFrame) -> pd.DataFrame:
-    # user interface message
-    print()
-    print('Extracting columns for bom...')
-
-    mdf = header.standardize_header_names(df, bom_header_list)
-
-    # Reorder header based on list and drop remaining columns
-    mdf = mdf[bom_header_list]
-
-    # user interface message
-    header_strings = ", ".join(mdf.columns)
-    print(f'Columns header are [{header_strings}]')
+    print(f'Columns are [{header_strings}]')
 
     return mdf
 
