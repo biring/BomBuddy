@@ -454,6 +454,7 @@ def split_manufacturers_to_separate_rows(
                 new_row = row.copy()
                 new_row.iloc[name_index] = name_list[i]
                 new_row.iloc[part_number_index] = part_number_list[i]
+                new_row.iloc[description_index] = description_list[i]
                 # Except for first occurrence, all other rows have zero quantity
                 if i != 0:
                     new_row.iloc[qty_index] = 0
@@ -733,6 +734,32 @@ def primary_above_alternative(df: pd.DataFrame,
     print("Done")
 
     return mdf
+
+
+def fill_merged_designators(df: pd.DataFrame,
+                              bom_template_version: BomTempVer,
+                              enum_bom_temp_version: Type[BomTempVer]) -> pd.DataFrame:
+    print()
+    print('Fill in designators when designator cells are merged in excel BOM... ')
+
+    # Not required for template version 2.0
+    if bom_template_version == enum_bom_temp_version.v2:
+        pass
+
+    # Only needed for template version 3.0
+    elif bom_template_version == enum_bom_temp_version.v3:
+        # Iterate over the rows of the DataFrame
+        for n in range(1, len(df)):  # Start from index 1 to avoid IndexError on n-1
+            # Check if the designator is empty in the current row
+            if not df.loc[n, designatorHdr]:
+                # Check if the description matches with the previous row
+                if df.loc[n, descriptionHdr] == df.loc[n - 1, descriptionHdr]:
+                    # Copy the designator from the previous row
+                    df.loc[n, designatorHdr] = df.loc[n - 1, designatorHdr]
+
+    # User interface message
+    print("Done")
+    return df
 
 
 def merge_alternative(df_in):
