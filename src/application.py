@@ -186,6 +186,9 @@ def sequence_ebom_for_db_upload():
     df = frames.delete_empty_columns(df)
     # set datatype for columns
     df = frames.set_bom_column_datatype(df)
+
+    # fill in designators when designator cells are merged
+    df = frames.fill_merged_designators(df, bom_temp_ver, BomTempVer)
     # primary component should be first
     df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
     # merge alternative components to one row
