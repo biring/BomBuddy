@@ -31,10 +31,9 @@ def sequence_cbom_for_cost_walk() -> None:
     bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
     # get source BOM header labels as they are different depending upon BOM template version and source BOM type
     source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
-    # get output BOM header labels as they are different depending upon BOM template version and output file format
-    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
-    # keep only the columns needed based on cBOM cost walk
+    # extract columns from source data
     df = frames.get_bom_columns(df, source_bom_header)
+
     # delete empty rows and columns
     df = frames.delete_empty_rows(df)
     df = frames.delete_empty_columns(df)
@@ -54,6 +53,10 @@ def sequence_cbom_for_cost_walk() -> None:
     df = frames.split_multiple_quantity(df)
 
     # *** write cBOM data to file ***
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    # keep only the columns needed based on cBOM cost walk
+    df = frames.get_bom_columns(df, output_bom_header)
     # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     # Set Excel file name
@@ -89,8 +92,7 @@ def sequence_cbom_for_db_upload() -> None:
     bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
     # get source BOM header labels as they are different depending upon BOM template version and source BOM type
     source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
-    # get output BOM header labels as they are different depending upon BOM template version and output file format
-    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    # extract columns from source data
     df = frames.get_bom_columns(df, source_bom_header)
     # delete empty rows and columns
     df = frames.delete_empty_rows(df)
@@ -100,7 +102,7 @@ def sequence_cbom_for_db_upload() -> None:
     # primary component should be first
     df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
     # merge alternative components to one row
-    df = frames.merge_alternative(df)
+    # df = frames.merge_alternative(df) dont merge alternative for ver 3
 
     # *** Clean up cbom data ***
     # remove empty designator data
@@ -143,6 +145,10 @@ def sequence_cbom_for_db_upload() -> None:
     df = frames.remove_part_number_from_description(df)
 
     # *** write scrubbed cBOM data to file ***
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    # keep only the columns needed based on cBOM upload to dB
+    df = frames.get_bom_columns(df, output_bom_header)
     # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     # Set Excel file name
@@ -178,8 +184,6 @@ def sequence_ebom_for_db_upload():
     bom_temp_ver = frames.get_bom_template_version(df, BomTempVer)
     # get source BOM header labels as they are different depending upon BOM template version and source BOM type
     source_bom_header = frames.get_source_bom_header_labels(bom_temp_ver, BomTempVer, source_file_type, SourceFileType)
-    # get output BOM header labels as they are different depending upon BOM template version and output file format
-    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
     df = frames.get_bom_columns(df, source_bom_header)
     # delete empty rows and columns
     df = frames.delete_empty_rows(df)
@@ -238,6 +242,10 @@ def sequence_ebom_for_db_upload():
     df = frames.remove_part_number_from_description(df)
 
     # *** write eBOM data to file ***
+    # get output BOM header labels as they are different depending upon BOM template version and output file format
+    output_bom_header = frames.get_output_bom_header_labels(bom_temp_ver, BomTempVer, output_file_type, OutputFileType)
+    # keep only the columns needed based on eBOM upload to dB
+    df = frames.get_bom_columns(df, output_bom_header)
     # get path to output data folder
     folder_path = paths.get_path_to_outputs_folder()
     # Set Excel file name
