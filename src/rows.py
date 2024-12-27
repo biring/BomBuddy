@@ -45,10 +45,15 @@ def merge_row_data_when_no_found(df, source_column, destination_column):
     # Get one row at a time
     for index, row in df.iterrows():
         # Get source and destination string
-        source_string = str(row.iloc[source_column])
-        destination_string = str(row.iloc[destination_column])
-        # only merge data when not found
-        if source_string.lower() not in destination_string.lower():
+        source_string = str(row.iloc[source_column]).strip()
+        destination_string = str(row.iloc[destination_column]).strip()
+
+        # Normalize the strings to handle numeric discrepancies like 2.0mm vs 2.00mm
+        normalized_source = strings.reduce_multiple_trailing_zeros_to_one(source_string.lower())
+        normalized_destination = strings.reduce_multiple_trailing_zeros_to_one(destination_string.lower())
+
+        # Only merge data when source string is not found in the destination string
+        if normalized_source not in normalized_destination:
             updated_destination_string = destination_string + "," + source_string
             debug_count = debug_count + 1
         else:
