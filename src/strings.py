@@ -251,8 +251,8 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
 
     # Loop through each reference string
     for ref_string in reference_strings:
-        lower_test_string = test_string.lower()
-        lower_ref_string = ref_string.lower()
+        lower_test_string = test_string.lower().strip()
+        lower_ref_string = ref_string.lower().strip()
         # Compute the Levenshtein distance between the test string and the current reference string
         distance = Levenshtein.distance(lower_test_string, lower_ref_string)
         # print(f'L = {distance:2.2f} {test_string:20} {ref_string:20}')
@@ -297,8 +297,8 @@ def find_best_match_jaccard(test_string: str, reference_strings: list) -> str:
     # Iterate through each reference string
     for ref_string in reference_strings:
         # Compute Jaccard similarity coefficient
-        set1 = set(test_string.lower())
-        set2 = set(ref_string.lower())
+        set1 = set(test_string.lower().strip())
+        set2 = set(ref_string.lower().strip())
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
         similarity = intersection / union
@@ -345,6 +345,25 @@ def check_consecutive_characters_presence(test_string: str, reference_string: st
     # If no matching consecutive substring found, return False
     return False
 
+def reduce_multiple_trailing_zeros_to_one(numeric_string: str) -> str:
+    """
+    Reduce multiple trailing zeros in the numeric part of a string to a single zero,
+    while preserving the units.
+
+    Example:
+    - "2.1000mm" => "2.10mm"
+    - "3.000kg" => "3.0kg"
+    - "2.0lb"   => "2.0lb"
+    - "5mm"     => "5mm"
+
+    Args:
+    numeric_string (str): The input string containing numeric and unit information.
+
+    Returns:
+    str: A string where multiple trailing zeros are reduced to one.
+    """
+    numeric_normalization_pattern = r'(\.\d*)0+(?=\D*$)'
+    return re.sub(numeric_normalization_pattern, r'\g<1>0', numeric_string)
 
 def main():
     pass  # do nothing
