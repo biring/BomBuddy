@@ -112,7 +112,9 @@ component_dict = {
     "Transformer": [
         "Transformer"],
     "Transistor": [
-        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH", "PNP Transistor", "NPN Transistor"],
+        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH"],
+        # Don't add "PNP Transistor" and "NPN Transistor" as both are a perfect match for Jaccard similarity
+        # and cause issues. Instead, if left out, both wil match correctly to Transistor
     "Triac/SCR": [
         "Triac/SCR", "Triac", "SCR"],
     "Unknown/Misc": [
