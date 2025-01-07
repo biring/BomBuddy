@@ -98,7 +98,7 @@ component_dict = {
     "Relay": [
         "Relay"],
     "Resistor": [
-        "Resistor", "Wire wound resistor", "Wire wound non flame resistor"],
+        "Resistor", "Resistance", "Wire wound resistor", "Wire wound non flame resistor"],
     "Sensor": [
         "Sensor"],
     "Spring": [
