@@ -124,15 +124,24 @@ def write_single_sheet_excel_file_data(folder, file, df) -> None:
     print()
     print(f'Writing excel file... ')
 
+    # Force the file extension to lowercase to avoid case sensitivity issues.
+    # For excel write using 'openpyxl', '.XLSX' does not work and the extention should be '.xlsx'.
+    base_name, ext = os.path.splitext(file)
+    file = base_name + ext.lower()  # Convert the extension to lowercase
+
+    # Ensure that the file extension is '.xlsx' (in lowercase)
+    if not file.endswith('.xlsx'):
+        raise ValueError(f"The file extension is incorrect for {file}. Expected '.xlsx' for excel file write.")
+
     file_path = os.path.join(folder, file)
     # Good practice to make path OS independent
     file_path = os.path.normpath(file_path)
 
     try:
-        df.to_excel(file_path, index=False)  # Set index=False to exclude the DataFrame index from being written
+        df.to_excel(file_path, index=False, engine="openpyxl")  # Set index=False to exclude the DataFrame index from being written
     except Exception as e:
         raise FileExistsError(f'Excel file write to "{file_path}" FAILED.', e)
 
-    print(f'Write of excel file from "{file_path}" successful.')
+    print(f'Write of excel file to "{file_path}" successful.')
 
     return None
