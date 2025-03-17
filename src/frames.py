@@ -47,28 +47,33 @@ ebom_header_list_v3 = [itemHdr, componentHdr, descriptionHdr, qtyHdr, designator
                        classHdr, manufacturerHdr, partNoHdr, pkgHdr]
 
 # Dictionary of component type reference strings (case-insensitive) and normalized stella component type names.
+# Perfect match should be listed last
 component_dict = {
     # list based on db template
     "Battery Terminals": [
         "Battery Terminals"],
     "Buzzer": [
-        "Buzzer", "Speaker"],
+        "Speaker",
+        "Buzzer"],
     "Cable": [
         "Cable"],
     "Capacitor": [
-        "Capacitor", "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion",
+        "Electrolytic Capacitor", "Disc Ceramic Capacitor", "Capartion", "Ceramic capacitor",
         "X1 Cap", "X1 Capacitor", "X1 Capacitance",
         "X2 Cap", "X2 Capacitor", "X2 Capacitance",
         "Y1 Cap", "Y1 Capacitor", "Y1 Capacitance",
-        "Y2 Cap", "Y2 Capacitor", "Y2 Capacitance"],
+        "Y2 Cap", "Y2 Capacitor", "Y2 Capacitance",
+        "Capacitor"],
     "Connector": [
-        "Connector", "PCB Tab", "Quick fit terminal", "Plug piece terminal"],
+        "PCB Tab", "Quick fit terminal", "Plug piece terminal",
+        "Connector"],
     "Crystal": [
         "Crystal"],
     "Diode": [
-        "Diode", "Switching diode", "Rectifier Bridge", "Bridge Rectifiers", "FRD", "Rectifier",
+        "Switching diode", "Rectifier Bridge", "Bridge Rectifiers", "FRD", "ESD", "Rectifier",
         "TVS", "Zener", "Zener Diode", "Bridge Rectifier", "Rectifier Diode", "Schottky", "Schottky Diode",
-        "IR Receiver"],
+        "IR Receiver",
+        "Diode"],
     "Electromagnet": [
         "Electromagnet"],
     "Foam": [
@@ -76,21 +81,26 @@ component_dict = {
     "FUSE": [
         "FUSE"],
     "Heatsink": [
+        "Heat Sink",
         "Heatsink"],
     "IC": [
-        "IC", "Operational amplifier"],
+        "Operational amplifier",
+        "IC"],
     "Inductor": [
-        "Inductor", "Common mode choke", "Choke"],
+        "Common mode choke", "Choke", "Ferrite", "Magnetic Bead",
+        "Inductor"],
     "Jumper": [
         "Jumper"],
     "LCD": [
         "LCD"],
     "LED": [
-        "LED", "LED Module"],
+        "LED Module",
+        "LED"],
     "MCU": [
         "MCU"],
     "MOV/Varistor": [
-        "MOV/Varistor", "MOV", "Varistor"],
+        "MOV", "Varistor",
+        "MOV/Varistor" ],
     "Optocoupler": [
         "Optocoupler"],
     "PCB": [
@@ -98,38 +108,46 @@ component_dict = {
     "Relay": [
         "Relay"],
     "Resistor": [
-        "Resistor", "Resistance", "Wire wound resistor", "Wire wound non flame resistor"],
+        "Resistance", "Wire wound resistor", "Wire wound non flame resistor",
+        "Resistor"],
     "Sensor": [
         "Sensor"],
     "Spring": [
-        "Spring", "Touch spring"],
+        "Touch spring",
+        "Spring"],
     "Switch": [
-        "Switch", "Tact Switch", "Slide Switch"],
+        "Tactile Switch", "Tact Switch", "Slide Switch",
+        "Switch"],
     "TCO": [
         "TCO"],
     "Thermistors": [
-        "Thermistors", "NTC"],
+        "NTC",
+        "Thermistors"],
     "Transformer": [
         "Transformer"],
     "Transistor": [
-        "Transistor", "BJT", "MOS", "Mosfet", "N-CH", "P-CH"],
+        "BJT", "MOS", "Mosfet", "N-CH", "P-CH",
         # Don't add "PNP Transistor" and "NPN Transistor" as both are a perfect match for Jaccard similarity
         # and cause issues. Instead, if left out, both wil match correctly to Transistor
+        "Transistor"],
     "Triac/SCR": [
-        "Triac/SCR", "Triac", "SCR"],
+        "Triac", "SCR",
+        "Triac/SCR"],
     "Unknown/Misc": [
-        "Unknown/Misc", "Unknown", "Misc"],
+        "Unknown", "Misc",
+        "Unknown/Misc"],
     "Voltage Regulator": [
-        "Voltage Regulator", "Regulator", "LDO", "three-terminal adjustable regulator"],
+        "Regulator", "LDO", "three-terminal adjustable regulator",
+        "Three-terminal Voltage Regulator", "SMT voltage regulator tube",
+        "Voltage Regulator"],
     "Wire": [
         "Wire"],
     # list based on test data
     "Chimney": [
         "Chimney"],
     "Heat Shrink": [
-        "Heat Shrink", "Heat Shrink Tubing"],
-    "Heat Sink": [
-        "Heat Sink"],
+        "Heat Shrink Tubing",
+        "Heat Shrink"],
     "Lens": [
         "Lens"],
     "Screw": [
@@ -146,11 +164,11 @@ unwanted_db_cbom_description_list = [
 
 # List of strings to determine which rows to delete based on string match with component type
 unwanted_db_ebom_component_list = [
-    "PCB", "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
+    "PCB", "Wire", "Lens", "Chimney", "Heat Shrink", "Screw", "Jumper"]
 
 # List of strings to determine which rows to delete based on string match with component type
 unwanted_db_cbom_component_list = [
-    "Wire", "Lens", "Chimney", "Heat Shrink", "Screw"]
+    "Wire", "Lens", "Chimney", "Heat Shrink", "Screw", "Jumper"]
 
 
 def search_and_set_bom_header(df: pd.DataFrame) -> pd.DataFrame:
@@ -340,8 +358,9 @@ def set_bom_column_datatype(df: pd.DataFrame) -> pd.DataFrame:
     df = df.replace("nan", "")
 
     # items column data contains numbers. It may be decimal data so convert to float.
-    df[itemHdr] = df[itemHdr].replace("", 0)  # empty cells are treated as zeros
-    df[itemHdr] = df[itemHdr].astype(float)
+    # df[itemHdr] = df[itemHdr].replace("", 0)  # empty cells are treated as zeros
+    # df[itemHdr] = df[itemHdr].replace("ALT", 0)  # ALT cells are treated as zeros
+    # df[itemHdr] = df[itemHdr].astype(float)
 
     # qty column data contains numbers. It will contain some decimal data (like glue qty) so convert to float.
     df[qtyHdr] = df[qtyHdr].replace("", 0)  # empty cells are treated as zeros
@@ -461,9 +480,9 @@ def split_manufacturers_to_separate_rows(
                 if i != 0:
                     new_row.iloc[qty_index] = 0
                 # If version 3.0, set price to 0 for all rows except the first
-                if bom_template_version == 3.0 and i != 0:
+                if bom_template_version == enum_bom_temp_version.v3 and i != 0:
                     new_row.iloc[price_index] = 0
-                if bom_template_version == 3.0:
+                if bom_template_version == enum_bom_temp_version.v3:
                     new_row.iloc[description_index] = description_list[i]
                 # add row to updated data frame
                 updated_df.loc[len(updated_df)] = new_row
@@ -588,7 +607,7 @@ def normalize_component_type_label(df):
         # Get component type
         component_type_name = row.iloc[type_index]
         # ignore SMD, DIP if found in component type name as they add not value
-        component_string = component_type_name.replace("SMD", "").replace("DIP", "").replace("ALT", "")
+        component_string = component_type_name.replace("SMD", "").replace("DIP", "").replace("ALT", "").replace("SMT", "")
         # Get all values from the component dict
         value_list = [value for sublist in component_dict.values() for value in sublist]
         # Get the best matched value
@@ -776,30 +795,29 @@ def merge_alternative(df_in):
     print()
     print('Merging alternatives items with primary item...')
 
-    # Reference string to detect alternative item row
-    alt_ref_string = "ALT"
-
     # Initialize variables to store previous primary item values
     prev_desc = ''
     prev_mfg = ''
     prev_pn = ''
+    prev_designator = ''
 
     # Create an empty data frame with same header
     df_out = pd.DataFrame(columns=df_in.columns)
     df_merger = df_out
 
     # read each row on at a time
-    for _, row in df_in.iterrows():
+    for n, row in df_in.iterrows():
 
-        if alt_ref_string not in row[componentHdr]:
+        if row[designatorHdr] != prev_designator:
 
             # first time around no need to concat as there is no data
             if len(df_merger) != 0:
                 df_out = pd.concat([df_out, pd.DataFrame(df_merger).T], axis=0, ignore_index=True)
             df_merger = row
-            prev_desc = row[designatorHdr]
+            prev_desc = row[descriptionHdr]
             prev_mfg = row[manufacturerHdr]
             prev_pn = row[partNoHdr]
+            prev_designator = row[designatorHdr]
         else:
             if row[descriptionHdr]:
                 df_merger[descriptionHdr] += "\n" + row[descriptionHdr]
@@ -1111,3 +1129,37 @@ def drop_items_with_empty_designator(df: pd.DataFrame) -> pd.DataFrame:
     print(f"Number of rows reduced from {df.shape[0]} to {mdf.shape[0]}")
 
     return mdf
+
+def fill_empty_cell_with_data_from_above_cell(df: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Filling empty cell with data from above cell.. ')
+
+    df = columns.fill_empty_cell_with_data_from_above_cell(df, itemHdr)
+
+    print('Done.')
+
+    return df
+
+def fill_empty_cell_using_data_from_above_alternative(df: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Filling empty cell with data from above alternative component.. ')
+
+    df = columns.fill_empty_cell_using_data_from_above_alternative(df, itemHdr, componentHdr)
+    df = columns.fill_empty_cell_using_data_from_above_alternative(df, itemHdr, designatorHdr)
+
+    print('Done.')
+
+    return df
+
+def replace_alternative_label_with_data_from_above_alternative(df: pd.DataFrame) -> pd.DataFrame:
+    # user interface message
+    print()
+    print('Replacing alternative label with data from above alternative component.. ')
+
+    df = columns.replace_alt_label_with_data_from_above_alt(df, itemHdr, componentHdr)
+
+    print('Done.')
+
+    return df
