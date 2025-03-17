@@ -99,10 +99,18 @@ def sequence_cbom_for_db_upload() -> None:
     df = frames.delete_empty_columns(df)
     # set datatype for columns
     df = frames.set_bom_column_datatype(df)
+
+    # fill empty cells with data from above cell.
+    df = frames.fill_empty_cell_with_data_from_above_cell(df)
+    # fill empty cells with data using alternative of the same components
+    df = frames.fill_empty_cell_using_data_from_above_alternative(df)
+    # replace alternative with data
+    df = frames.replace_alternative_label_with_data_from_above_alternative(df)
+
     # primary component should be first
     df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
     # merge alternative components to one row
-    # df = frames.merge_alternative(df) dont merge alternative for ver 3
+    df = frames.merge_alternative(df)
 
     # *** Clean up cbom data ***
     # remove empty designator data
@@ -140,7 +148,7 @@ def sequence_cbom_for_db_upload() -> None:
     df = frames.cleanup_part_number(df)
 
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
-    df = frames.merge_type_data_with_description(df, bom_temp_ver)
+    # df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
     df = frames.remove_part_number_from_description(df)
 
@@ -191,8 +199,16 @@ def sequence_ebom_for_db_upload():
     # set datatype for columns
     df = frames.set_bom_column_datatype(df)
 
+    # fill empty cells with data from above cell.
+    df = frames.fill_empty_cell_with_data_from_above_cell(df)
+    # fill empty cells with data using alternative of the same components
+    df = frames.fill_empty_cell_using_data_from_above_alternative(df)
+    # replace alternative with data
+    df = frames.replace_alternative_label_with_data_from_above_alternative(df)
+
     # fill in designators when designator cells are merged
-    df = frames.fill_merged_designators(df, bom_temp_ver, BomTempVer)
+    # df = frames.fill_merged_designators(df, bom_temp_ver, BomTempVer)
+
     # primary component should be first
     df = frames.primary_above_alternative(df, bom_temp_ver, BomTempVer)
     # merge alternative components to one row
@@ -237,7 +253,7 @@ def sequence_ebom_for_db_upload():
     df = frames.cleanup_part_number(df)
 
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
-    df = frames.merge_type_data_with_description(df, bom_temp_ver)
+    # df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
     df = frames.remove_part_number_from_description(df)
 
