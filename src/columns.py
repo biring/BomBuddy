@@ -133,3 +133,139 @@ def reorder_header_to_list(df: pd.DataFrame, order: list) -> pd.DataFrame:
     # Reorder DataFrame by the provided list and drop remaining columns
     mdf = df[order]
     return mdf
+
+def fill_empty_cell_with_data_from_above_cell(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """
+    Fills the empty cells in the specified column with the value from the previous row in the same column.
+
+    This function iterates over the rows in the DataFrame and checks if the cell in the specified column is empty.
+    If a cell is empty, it is filled with the value from the row above it.
+
+    Args:
+    - df (pd.DataFrame): DataFrame containing the data.
+    - column (str): The column where the fill operation is applied.
+
+    Returns:
+    - pd.DataFrame: The updated DataFrame with empty cells filled from the previous row.
+    """
+    print(f' Filling empty cells in the "{column}" column with values from the row above.')
+
+    # Get the total number of rows in the DataFrame
+    num_rows = len(df)
+
+    # Counter to track the number of cells updated
+    counter = 0
+
+    # Define what is considered an empty cell
+    empty = ""
+
+    # Loop through the DataFrame starting from the second row (index 1)
+    for n in range(1, num_rows):
+        # Check if the current cell in the specified column is empty
+        if df.iloc[n][column] == empty:
+            # Log the change from the previous value to the current one
+            print(f'  Changed "{df.iloc[n, df.columns.get_loc(column)]}" to "{df.iloc[n - 1, df.columns.get_loc(column)]}"')
+            # Fill the empty cell with the value from the previous row
+            df.iloc[n, df.columns.get_loc(column)] = df.iloc[n - 1, df.columns.get_loc(column)]
+            counter += 1
+
+    # Print a summary of the number of cells updated
+    print(f' {counter} cells updated.')
+
+    return df
+
+def fill_empty_cell_using_data_from_above_alternative(df: pd.DataFrame, item: str, column: str) -> pd.DataFrame:
+    """
+    Fills empty cells in the specified column with the value from the previous row,
+    but only if the value in the 'item' column matches between the current row
+    and the previous row.
+
+    This function checks if the 'item' column value in the current row matches the value in
+    the previous row. If both the 'item' value matches and the specified column contains
+    an empty cell, the empty cell is filled with the value from the previous row.
+
+    Args:
+    - df (pd.DataFrame): The DataFrame containing the data to modify.
+    - item (str): The column name to check for matching values between consecutive rows.
+    - column (str): The column to be updated with the previous row's value if conditions are met.
+
+    Returns:
+    - pd.DataFrame: The updated DataFrame after filling matching empty cells with the previous row's value.
+    """
+
+    # Print message indicating the operation is starting
+    print(f' Filling empty cells in "{column}" column with values from the row above (conditional on matching "{item}" column).')
+
+    # Get the total number of rows in the DataFrame
+    num_rows = len(df)
+
+    # Counter to track the number of cells updated
+    counter = 0
+
+    # Define what is considered an empty cell
+    empty = ""
+
+    # Iterate through the rows starting from index 1 (second row)
+    for n in range(1, num_rows):
+        # Check if the 'item' value matches between the current and previous row
+        is_item_match = df.iloc[n][item] == df.iloc[n - 1][item]
+
+        # Check if the current cell in the specified column is empty
+        is_empty = df.iloc[n][column] == empty
+
+        # If both conditions are met, fill the empty cell with the previous row's value
+        if is_item_match and is_empty:
+            # Log the change from the previous value to the current one
+            print(f'  changed "{df.iloc[n, df.columns.get_loc(column)]}" to "{df.iloc[n - 1, df.columns.get_loc(column)]}"')
+            # Fill the current empty cell with the value from the previous row
+            df.iloc[n, df.columns.get_loc(column)] = df.iloc[n - 1, df.columns.get_loc(column)]
+            counter += 1
+
+    # Print a summary of the number of cells updated
+    print(f' {counter} cells updated.')
+
+    return df
+
+def replace_alt_label_with_data_from_above_alt(df: pd.DataFrame, item: str, column: str) -> pd.DataFrame:
+    """
+    Replaces cells in the specified column containing the string "ALT" with the value
+    from the previous row in the same column, but only if the value in the 'item' column
+    matches the previous row's 'item' column value.
+
+    This function looks for rows where the value in the 'column' contains "ALT" and the
+    value in the 'item' column matches the previous row. If both conditions are met,
+    the current cell is replaced with the value from the previous row in the same column.
+
+    Args:
+    - df (pd.DataFrame): The DataFrame containing the data to modify.
+    - item (str): The column name to check for matching values between consecutive rows.
+    - column (str): The column to be updated with the previous row's value when conditions are met.
+
+    Returns:
+    - pd.DataFrame: The updated DataFrame after replacing cells with the previous row's value.
+    """
+    # Print message indicating the operation is starting
+    print(f' Replacing "ALT" labels in "{column}" column with values from the row above (conditional on matching "{item}" column).')
+    # Get the total number of rows in the DataFrame
+    num_rows = len(df)
+    # Counter to track the number of cells updated
+    counter = 0
+    # Define the string that identifies an alternative label
+    alt = "ALT"
+    # Iterate through the rows starting from index 1 (second row)
+    for n in range(1, num_rows):
+        # Check if the 'item' value matches between the current and previous row
+        is_item_match = df.iloc[n][item] == df.iloc[n - 1][item]
+        # Check if the current cell in the specified column contains "ALT"
+        is_alt = alt in df.iloc[n][column]
+        # If both conditions are met, replace the current value with the previous row's value
+        if is_item_match and is_alt:
+            # Log the change from the previous value to the current one
+            print(f'  Changed "{df.iloc[n, df.columns.get_loc(column)]}" to "{df.iloc[n - 1, df.columns.get_loc(column)]}"')
+            # Replace the "ALT" label with the value from the previous row
+            df.iloc[n, df.columns.get_loc(column)] = df.iloc[n - 1, df.columns.get_loc(column)]
+            counter += 1
+    # Print a summary of the number of cells updated
+    print(f' {counter} cells updated.')
+
+    return df
