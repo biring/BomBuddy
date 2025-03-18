@@ -266,7 +266,6 @@ def find_best_match_levenshtein(test_string: str, reference_strings: list) -> st
         if min_distance == perfect_match:
             break
 
-
     # Return the best matching reference string
     return best_match
 
@@ -345,6 +344,7 @@ def check_consecutive_characters_presence(test_string: str, reference_string: st
     # If no matching consecutive substring found, return False
     return False
 
+
 def reduce_multiple_trailing_zeros_to_one(numeric_string: str) -> str:
     """
     Reduce multiple trailing zeros in the numeric part of a string to a single zero,
@@ -364,6 +364,72 @@ def reduce_multiple_trailing_zeros_to_one(numeric_string: str) -> str:
     """
     numeric_normalization_pattern = r'(\.\d*)0+(?=\D*$)'
     return re.sub(numeric_normalization_pattern, r'\g<1>0', numeric_string)
+
+def strip_match_from_string(df: pd.DataFrame, pattern_column, search_column) -> pd.DataFrame:
+    """
+    Remove occurrences of a specified pattern from a string in a column of a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data.
+        pattern_column (str or int): The column name or index in the DataFrame containing the patterns to search for.
+        search_column (str or int): The column name or index in the DataFrame containing the strings from which patterns will be removed.
+
+    Returns:
+        pd.DataFrame: The modified DataFrame with the specified patterns removed from the `search_column`.
+
+    Example:
+        # Example with simple strings and special characters ('#' and '-')
+        data = {'pattern_column': ['123', '#123', '-456', '#789-', '000'],
+                'search_column': ['abc123xyz', 'abc#123xyz', 'def-456ghi', 'ghi#789-xyz', 'jkl000']}
+        df = pd.DataFrame(data)
+
+        # Before calling the function:
+        #       pattern_column  search_column
+        # 0     123             abc123xyz
+        # 1     #123            abc#123xyz
+        # 2     -456            def-456ghi
+        # 3     #789-           ghi#789-xyz
+        # 4     000             jkl000
+
+        # Call the function to remove the pattern from search_column
+        df = strip_match_from_string(df, 'pattern_column', 'search_column')
+
+        # After calling the function:
+        #       pattern_column  search_column
+        # 0     123             abcxyz
+        # 1     #123            abcxyz
+        # 2     -456            defghi
+        # 3     #789-           ghi-xyz
+        # 4     000             jkl
+    """
+    # Print message indicating the operation is starting
+    print(f"\tRemoving data found in '{pattern_column}' from '{search_column}'")
+
+    # Keep track of number of cells changed
+    count = 0
+
+    # Iterate through each row of the DataFrame
+    for n, row in df.iterrows():
+        # Get the pattern string from the specified column
+        pattern = row[pattern_column].strip()  # Remove leading and trailing spaces from the pattern
+        # Get the string from the search column
+        old_string = row[search_column]
+
+        # Check if the pattern is found in the search string
+        is_found = pattern in old_string
+
+        # If the pattern is found, perform replacement
+        if is_found:
+            new_string = old_string.replace(pattern, '')  # Replace the pattern with an empty string
+            df.at[n, search_column] = new_string  # Update the DataFrame at the current row
+            count += 1  # Increment the count of changes
+            print(f"\t\tFound '{pattern}' Changed '{old_string}' to '{new_string}'")
+
+    # Print a summary of the number of cells updated
+    print(f'\t{count} cells updated.')
+
+    return df
+
 
 def main():
     pass  # do nothing
