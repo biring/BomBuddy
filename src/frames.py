@@ -6,6 +6,7 @@ import pandas as pd
 import columns
 import header
 import rows
+from src import strings
 
 from src.enumeration import SourceFileType, OutputFileType, BomTempVer
 
@@ -673,18 +674,15 @@ def remove_part_number_from_description(data_frame):
     print()
     print('Removing part numbers from description... ')
 
-    # Get the index of the part number column
-    part_number_index = columns.get_single_header_index(data_frame, 'P/N', False)
-
-    # Get the index of description column
-    description_index = columns.get_single_header_index(data_frame, 'Description', True)
-
-    mdf = columns.refactor_string_if_matched(data_frame, part_number_index, description_index)
+    mdf = strings.strip_match_from_string(data_frame, partNoHdr, descriptionHdr)
 
     # remove duplicate, starting and trailing comma that may be left after part number is removed from description
+    mdf[descriptionHdr] = mdf[descriptionHdr].str.replace(r',{2,}', ',', regex=True) # Do this before strip
     mdf[descriptionHdr] = mdf[descriptionHdr].str.lstrip(',')
     mdf[descriptionHdr] = mdf[descriptionHdr].str.rstrip(',')
-    mdf[descriptionHdr] = mdf[descriptionHdr].str.replace(r',{2,}', ',', regex=True)
+
+    print('Done.')
+
 
     return data_frame
 
