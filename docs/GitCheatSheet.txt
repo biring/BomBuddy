@@ -28,12 +28,13 @@ COMMIT CHANGES TO REMOTE/ORIGIN/WORKING
 git branch -a           # List all branches
 git branch              # List local branches
 git branch -r           # List remote branches
-2. Review the changes made to the code
-git diff                # See changes not yet staged
-git diff --staged       # See changes that have been staged
-3. See the status of modified files
+2. See the status of modified files
 git status              # Check status of files
 git status -s           # Short status summary
+3. Review the changes made to the code
+git diff                # See changes not yet staged
+git diff <file-name>	# See changes to the specific file not yet staged
+git diff --staged       # See changes that have been staged
 4. Stage changes (add files)
 git add <file-name>     # Stage a specific file
 git add -A              # Stage all changes
@@ -42,7 +43,7 @@ git add .               # Stage changes in the current directory
 git commit -m "Short description" -m "Detailed explanation of changes"
 git commit --verbose    # See the diff of staged changes
 6. Pull the latest changes (to avoid conflicts)
-git pull origin master --rebase  # Avoid merge commits by rebasing
+git pull origin <branch> --rebase  # Avoid merge commits by rebasing
 7. Push changes to the remote branch
 git push origin <branch>  # Push changes to the correct remote branch
 8. Verify your recent commit(s)
@@ -149,4 +150,19 @@ git clean -f -d
 git clean -f -x
 	Force deletion of untracked .gitignore files.
 
+
+GIT COMMIT TEMPLATE
+git commit -m "<type>(<scope>): <short description>"
+-m "<detailed description of the change 1>"
+-m "<detailed description of the change 2>"
+-m "<optional additional change details>"
+
+Common Types of Change:
+feat: A new feature has been added to the codebase.
+fix: A bug or issue has been resolved.
+docs: Changes to documentation.
+style: Code style changes (e.g., formatting).
+refactor: Refactoring code without changing its functionality.
+test: Adding or modifying tests.
+chore: Routine tasks or updates, like build scripts, dependencies, or CI configuration.
 
