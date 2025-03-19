@@ -1,9 +1,35 @@
+"""
+Main module for the Electrical BOM (Bill of Materials) Processor.
+
+This module provides the main entry point for interacting with the Electrical BOM
+processing system. It includes a menu interface that allows users to select various
+options for processing both cBOM and eBOM.
+
+Usage:
+    - Run this file to interact with the system. The user will be prompted with a menu
+      to select one of the available options for processing the BOMs.
+"""
+
 import application
 import console
 import version
 
 
-def run_menu():
+def run_menu() -> bool:
+    """
+    Displays the main menu and processes the user's selection.
+
+    This function presents a list of options to the user. The user selects an option
+    by entering the corresponding number. Based on the user's selection, the appropriate
+    function is called to process either the cBOM or eBOM for different tasks.
+
+    If the user selects an invalid option, a warning message is displayed. In the event
+    of an unexpected error, an error message is shown, and the function returns False.
+
+    Returns:
+        bool: True if the menu was executed successfully and a valid option selected,
+              False if an error occurred or an invalid option selected.
+    """
     try:
         # list of main menu option
         menu_options = ['Process cBOM for cost walk',
@@ -31,15 +57,32 @@ def run_menu():
 
 
 def show_title():
+    """
+    Displays the version and build information of the application.
+
+    This function prints the version and build information of the application as defined
+    in the version module.
+
+    Example:
+        Version 1.0.0
+        Build 12345
+    """
     print(f'Version {version.__version__} ')
     print(f'Build {version.__build__} ')
 
 
 def main():
+    """
+    Main function to run the application.
+
+    This function displays the application title and enters a loop that displays
+    and handles the main menu options. The loop continues to run until the user exits
+    the application. After exiting, a message is printed to indicate the application is closing.
+    """
     # Menu title
     show_title()
-    # Forever loop
 
+    # Forever loop
     while run_menu():
         pass
 
