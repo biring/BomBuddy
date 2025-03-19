@@ -1,8 +1,9 @@
 import application
 import console
+import version
 
 
-def main():
+def run_menu():
     try:
         # list of main menu option
         menu_options = ['Process cBOM for cost walk',
@@ -20,14 +21,31 @@ def main():
         elif user_selection == 2:
             application.sequence_ebom_for_db_upload()
         else:
-            print("Invalid selection. Please choose a valid option.")
+            print("WARNING! Invalid selection. Please select a valid option.")
     except Exception as e:
         print('*** ERROR ***')
-        print(e)
-    finally:
-        # Regardless of whether an exception occurred or not, print this message.
-        print()
-        print("Exiting application.")
+        print(f"An error occurred: {e}")
+        return False
+
+    return True
+
+
+def show_title():
+    print(f'Version {version.__version__} ')
+    print(f'Build {version.__build__} ')
+
+
+def main():
+    # Menu title
+    show_title()
+    # Forever loop
+
+    while run_menu():
+        pass
+
+    # Exit message
+    print()
+    print("Exiting application.")
 
 
 if __name__ == "__main__":
