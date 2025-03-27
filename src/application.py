@@ -150,7 +150,7 @@ def sequence_cbom_for_db_upload() -> None:
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
     # df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
-    df = frames.remove_part_number_from_description(df)
+    # df = frames.remove_part_number_from_description(df)
 
     # *** write scrubbed cBOM data to file ***
     # get output BOM header labels as they are different depending upon BOM template version and output file format
@@ -255,7 +255,7 @@ def sequence_ebom_for_db_upload():
     # add type information to description. Note do this before removing P/N from description or nan cell causes issue
     # df = frames.merge_type_data_with_description(df, bom_temp_ver)
     # remove part number from description
-    df = frames.remove_part_number_from_description(df)
+    # df = frames.remove_part_number_from_description(df)
 
     # *** write eBOM data to file ***
     # get output BOM header labels as they are different depending upon BOM template version and output file format
