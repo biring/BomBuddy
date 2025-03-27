@@ -806,7 +806,7 @@ def merge_alternative(df_in):
     # read each row on at a time
     for n, row in df_in.iterrows():
 
-        if row[designatorHdr] != prev_designator:
+        if row[designatorHdr] != prev_designator or n == 0 :
 
             # first time around no need to concat as there is no data
             if len(df_merger) != 0:
