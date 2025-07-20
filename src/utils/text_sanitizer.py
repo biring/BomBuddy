@@ -10,14 +10,20 @@ These are commonly used in data cleansing pipelines,
 file parsers, or any user-generated text input processing.
 
 Example Usage:
- > from text_sanitizer import strip_non_printable_ascii
- > clean = strip_non_printable_ascii(raw_text)
+    # Preferred usage via public package interface:
+    from src.utils import remove_all_whitespace
+
+    # Direct module usage (acceptable in unit tests or internal scripts only):
+    import src.utils.text_sanitizer as sanitizer
+    clean = sanitizer.remove_all_whitespace(raw_text)
 
 Dependencies:
  - Python >= 3.9
  - Standard Library: re, string
 
 Notes:
+ - This module is intended for internal use within the `utils` package.
+ - Public functions should be imported via `src.utils` where possible to preserve API boundaries.
  - Designed for use in BOM parsing and other text preprocessing utilities.
  - Keeps separation of concerns between structure parsing and text cleanup.
 """

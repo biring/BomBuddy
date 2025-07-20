@@ -1,18 +1,22 @@
 """
-Public interfaces for the utility package.
+Public interface for the utility package.
 
 This package provides reusable utility functions for data preprocessing,
-string sanitization, and formatting.
+string sanitization, and formatting tasks.
 
-Only explicitly exposed functions are available for external use; internal
-logic should remain encapsulated within their respective modules and not
-imported directly.
+Only explicitly exported functions are intended for external use. Internal
+logic should remain encapsulated within their respective modules and should
+not be imported directly.
 
-Intended usage:
-    from src.utils import remove_all_whitespace
+Note:
+    To ensure maintainability and encapsulation, always import utility functions
+    from the `src.utils` package-level interface rather than from submodules.
 
-    import src.utils.text_sanitizer as sanitizer
-    clean = sanitizer.remove_all_whitespace(raw_text)
+    Preferred:
+        from src.utils import remove_all_whitespace
+
+    Avoid:
+        from src.utils.text_sanitizer import remove_all_whitespace
 """
 
 from .text_sanitizer import (
@@ -30,4 +34,3 @@ __all__ = [
     "remove_non_printable_ascii",
     "remove_standard_spaces",
 ]
-
