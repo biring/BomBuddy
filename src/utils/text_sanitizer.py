@@ -1,0 +1,140 @@
+"""
+Utility functions for sanitizing and normalizing text inputs.
+
+This module includes helpers to:
+ - Remove non-printable characters (e.g., control codes)
+ - Normalize space characters (collapse multiple spaces, trim)
+ - Remove all space characters or all types of whitespace
+
+These are commonly used in data cleansing pipelines,
+file parsers, or any user-generated text input processing.
+
+Example Usage:
+ > from text_sanitizer import strip_non_printable_ascii
+ > clean = strip_non_printable_ascii(raw_text)
+
+Dependencies:
+ - Python >= 3.9
+ - Standard Library: re, string
+
+Notes:
+ - Designed for use in BOM parsing and other text preprocessing utilities.
+ - Keeps separation of concerns between structure parsing and text cleanup.
+"""
+
+import re
+import string
+
+# CHARACTER CONSTANTS
+EMPTY_STRING = ''  # No character
+SPACE_CHAR = ' '  # One space character
+
+# REGULAR EXPRESSIONS
+WHITE_SPACE_REGEX = re.compile(r'\s+')  # Matches all Unicode whitespace characters (space, tab, newline, etc.)
+MULTIPLE_SPACES_REGEX = re.compile(r' {2,}')  # Matches two or more consecutive space characters
+
+
+def normalize_to_string(text) -> str:
+    """
+    Normalize input to a valid string.
+
+    - Returns an empty string for None.
+    - Converts other non-string types using str().
+    - Leaves string inputs unchanged.
+
+    This helper ensures that downstream string sanitizers can operate safely.
+
+    Args:
+        text: Any input value (str, None, int, etc.)
+
+    Returns:
+        str: A valid string representation safe for further processing.
+    """
+    if not isinstance(text, str):
+        if text is None:
+            return ''
+        return str(text)
+    return text
+
+
+def remove_non_printable_ascii(text: str) -> str:
+    """
+    Remove all non-printable ASCII characters from the input string.
+
+    This includes control characters and special formatting codes outside the
+    standard printable ASCII range. Useful for sanitizing strings from logs,
+    user inputs, or external files where hidden or corrupted characters may exist.
+
+    Handles None and non-string inputs gracefully by converting them to strings.
+
+    Args:
+        text (str): The input string to sanitize.
+
+    Returns:
+        str: A cleaned string containing only printable ASCII characters.
+    """
+    text = normalize_to_string(text)
+    printable = set(string.printable)
+    return ''.join(ch for ch in text if ch in printable)
+
+
+def normalize_spaces(text: str) -> str:
+    """
+    Normalize spacing by collapsing multiple spaces into one and trimming edges.
+
+    This function replaces two or more consecutive space characters with a
+    single space and removes leading and trailing spaces. It is useful for
+    cleaning user input or text data with irregular spacing.
+
+    Handles None and non-string inputs gracefully by converting them to strings.
+
+    Args:
+        text (str): The input string to normalize.
+
+    Returns:
+        str: A string with normalized spacing (single spaces between words).
+    """
+    text = normalize_to_string(text)
+    return MULTIPLE_SPACES_REGEX.sub(SPACE_CHAR, text).strip()
+
+
+def remove_standard_spaces(text: str) -> str:
+    """
+    Removes all standard ASCII space characters (U+0020) from the input string.
+
+    This function deletes only the standard space character (' ', Unicode U+0020),
+    while preserving all other characters, including non-ASCII whitespace such as
+    tabs ('\\t'), newlines ('\\n'), carriage returns ('\\r'), and other Unicode
+    space characters (e.g., non-breaking space, em-space).
+
+    Handles None and non-string inputs gracefully by converting them to strings.
+
+    Args:
+        text (str): The input string from which standard space characters will be removed.
+
+    Returns:
+        str: A string with all standard ASCII space characters removed; all other characters remain unchanged.
+    """
+    text = normalize_to_string(text)
+    return text.replace(SPACE_CHAR, EMPTY_STRING)
+
+
+def remove_all_whitespace(text: str) -> str:
+    """
+    Remove all whitespace characters from the input string.
+
+    This function eliminates all types of Unicode whitespace characters, including
+    spaces (' '), tabs ('\\t'), newlines ('\\n'), carriage returns ('\\r'),
+    vertical tabs ('\\v'), and form feeds ('\\f'). It is useful for compacting
+    a string or preparing it for strict formatting or validation.
+
+    Handles None and non-string inputs gracefully by converting them to strings.
+
+    Args:
+        text (str): The input string to clean.
+
+    Returns:
+        str: A string with all whitespace characters removed.
+    """
+    text = normalize_to_string(text)
+    return WHITE_SPACE_REGEX.sub(EMPTY_STRING, text)
