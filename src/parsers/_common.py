@@ -1,31 +1,32 @@
 """
-Utilities for matching and validating labeled rows in a DataFrame.
+Utilities for identifying and validating labeled rows in semi-structured DataFrames.
 
-This module provides functions to:
- - Identify the row in a DataFrame with the highest number of matching labels
- - Determine which expected labels are missing from the best-matching row
- - Normalize strings before performing matches (case, whitespace, non-printable chars)
+This module provides functionality to:
+ - Detect the most likely header row based on fuzzy label matching
+ - Validate that all required labels exist in a row using exact matching
+ - Extract metadata and BOM component tables from Excel-like sheets
+ - Normalize strings for resilient header and label comparisons
+ - Flatten DataFrames and retrieve values using fuzzy label indexing
 
-These utilities are useful for parsing semi-structured tabular data, such as
-imported CSV files where header rows may vary in format or position.
+These utilities support parsing tabular data (e.g., BOM sheets or form-like tables)
+where headers may appear in different rows or with inconsistent formatting.
 
 Example Usage:
-    # Preferred usage via public package interface:
-    # Not applicable — this function is internal and not exposed via public API.
-
-    # Direct module usage (acceptable in unit tests or internal scripts only):
-    > from src.parsers._common import find_unmatched_labels_in_best_row
-    > unmatched = find_unmatched_labels_in_best_row(df, ["Account", "Amount", "Date"])
+ > import src.parsers._common as common
+ > unmatched = common.find_unmatched_labels_in_best_row(df, ["Item", "Part Number", "Quantity"])
 
 Dependencies:
  - Python >= 3.10
  - pandas
- - src.utils.text_sanitizer (for normalization helpers)
+ - src.utils.text_sanitizer:
+     - normalize_to_string
+     - remove_all_whitespace
+     - remove_non_printable_ascii
 
 Notes:
- - Assumes all inputs are small to moderately sized DataFrames in memory.
- - Matching is tolerant during row selection (substring match), but strict during validation (exact match).
- - Internal use only; leading underscores denote non-public API functions.
+ - Designed for internal use; functions are not part of a public API.
+ - Matching is tolerant (substring) during row detection, but exact during validation.
+ - Assumes inputs are moderately sized in-memory DataFrames, as from Excel or CSV.
 
 License:
  - Internal Use Only
@@ -42,6 +43,188 @@ from src.utils import (
 
 # Module constants
 NO_BEST_MATCH_ROW: Final = -1  # Valid dataframe row number be will zero or higher. So pick something that is invalid
+NO_MATCH_IN_LIST: Final = -1  # Valid list number be will zero or higher. So pick something that is invalid
+EMPTY_CELL_REPLACEMENT: Final = ""  # Empty cells in a dataframe default to an empty string
+
+
+def _normalize_label_text(text: object) -> str:
+    """
+    Normalizes input text for consistent label matching.
+
+    This helper function standardizes various types of input to enable
+    reliable comparison of label strings. It performs the following:
+    - Converts the input to a string using `normalize_to_string`
+    - Removes all non-printable ASCII characters
+    - Eliminates all whitespace characters (including tabs and newlines)
+    - Converts the final result to lowercase
+
+    This is used internally for both fuzzy (substring) and exact label matching
+    to ensure robustness against formatting differences in raw data.
+
+    Args:
+        text (object): The input to normalize. Can be a string, number, None, or other type.
+
+    Returns:
+        str: A fully normalized lowercase string, stripped of whitespace and non-printable characters.
+    """
+    normalized = normalize_to_string(text)
+    return remove_all_whitespace(remove_non_printable_ascii(normalized)).lower()
+
+
+def _search_label_index(data: list[str], label: str) -> int:
+    """
+    Searches for the index of a label in a list using normalized exact matching.
+
+    This function normalizes both the label and list elements using
+    `_normalize_label_text`, and returns the index of the first exact match.
+
+    Used to locate label positions in flattened metadata lists.
+
+    Args:
+        data (list[str]): List of candidate strings.
+        label (str): Label to search for.
+
+    Returns:
+        int: Index of the matching element, or NO_MATCH_IN_LIST (-1) if not found.
+    """
+    for idx, value in enumerate(data):
+        if _normalize_label_text(label) == _normalize_label_text(value):
+            return idx
+
+    return NO_MATCH_IN_LIST
+
+
+def create_dict_from_row(row: pd.Series) -> dict[str, str]:
+    """
+    Converts a one-row pandas DataFrame (Series) into a dictionary
+    with normalized column names as keys and cell values.
+
+        This function is intended for processing metadata or BOM rows where column headers
+        may be inconsistently formatted. Each column label is normalized and used as a key,
+        with the corresponding cell value converted to a string if needed.This is useful
+        when extracting key-value pairs from BOM or metadata rows where headers may be
+        inconsistently formatted.
+
+    Args:
+        row (pd.Series): A single row from a pandas DataFrame.
+
+    Returns:
+        dict[str, str]: Dictionary with normalized keys and string values.
+    """
+    dictionary = {}
+
+    for column_label, cell_value in row.items():
+        key = _normalize_label_text(column_label)
+        dictionary[key] = cell_value
+
+    return dictionary
+
+
+def extract_header(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
+    """
+    Extracts the section above the BOM table from the given DataFrame.
+
+    Finds the most probable BOM table header row, then returns all rows above it.
+    Used to capture metadata like revision, date, or build stage.
+
+    Args:
+        df (pd.DataFrame): Full DataFrame for the sheet.
+        labels (list[str]): Expected BOM column headers.
+
+    Returns:
+        pd.DataFrame: All rows above the detected header row.
+
+    Raises:
+        ValueError: If no suitable header row is found or header block is empty.
+    """
+    bom_table_header_row = find_row_with_most_label_matches(df, labels)
+
+    if bom_table_header_row <= 0:
+        raise ValueError("Header extraction failed: unable to locate BOM table header row.")
+
+    bom_header = df.iloc[:bom_table_header_row]
+
+    if bom_header.empty:
+        raise ValueError("Header extraction failed: resulting header is empty.")
+
+    return bom_header
+
+
+def extract_label_value(data: list[str], label: str) -> str:
+    """
+    Extracts the value corresponding to a label from a flat list of alternating label-value pairs.
+
+    Performs normalized substring matching to locate the label, then returns the next element as the value.
+
+    Args:
+        data (list[str]): List of strings containing labels and values.
+        label (str): Label whose associated value is to be retrieved.
+
+    Returns:
+        str: The value found next to the matched label. Returns an empty string if label is not found.
+
+    Raises:
+        ValueError: If the label is matched but no value follows it.
+    """
+    label_index = _search_label_index(data, label)
+
+    if label_index == NO_MATCH_IN_LIST:
+        # TODO: Log a warning when value for label is not found
+        return ""
+
+    try:
+        return data[label_index + 1]
+    except:
+        # Raise an error when label is found but not value as all labels should have a value
+        raise ValueError(f"No value found for label = {label}, at index = {label_index}.")
+
+
+def extract_row_cell(row: pd.Series, column_header: str) -> str:
+    """
+    Extracts and normalizes the value of a cell from a row using fuzzy column header matching.
+
+    Normalizes both the requested column header and the row’s keys to allow resilient lookup.
+
+    Args:
+        row (pd.Series): Row from the BOM table.
+        column_header (str): The desired column header to search for.
+
+    Returns:
+        str: Normalized string value if found; empty string otherwise.
+    """
+    norm_column_header = _normalize_label_text(column_header)
+    normalized_row = create_dict_from_row(row)
+    value = normalized_row.get(norm_column_header, "")
+    return normalize_to_string(value)
+
+
+def extract_table(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
+    """
+    Extracts the BOM component table from the given DataFrame.
+
+    Finds the most probable BOM table header row and returns all rows from that row onward.
+
+    Args:
+        df (pd.DataFrame): Full sheet as a DataFrame.
+        labels (list[str]): Expected BOM header labels.
+
+    Returns:
+        pd.DataFrame: BOM table including the header and all following rows.
+
+    Raises:
+        ValueError: If no header is found or resulting table is empty.
+    """
+    bom_table_header_row = find_row_with_most_label_matches(df, labels)
+
+    if bom_table_header_row < 0 or bom_table_header_row >= len(df):
+        raise ValueError("Table extraction failed: unable to locate BOM table start row.")
+
+    bom_table = df.iloc[bom_table_header_row:]
+
+    if bom_table.shape[0] <= 1:
+        raise ValueError("Table extraction failed: no data rows found in the table.")
+
+    return bom_table
 
 
 def find_row_with_most_label_matches(df: pd.DataFrame, labels: list[str]) -> int:
@@ -141,25 +324,45 @@ def find_unmatched_labels_in_best_row(df: pd.DataFrame, required_labels: list[st
     return unmatched_labels
 
 
-def _normalize_label_text(text: object) -> str:
+def flatten_dataframe(df: pd.DataFrame) -> list[str]:
     """
-    Normalizes input text for consistent label matching.
+    Flattens the entire DataFrame into a single list of strings.
 
-    This helper function standardizes various types of input to enable
-    reliable comparison of label strings. It performs the following:
-    - Converts the input to a string using `normalize_to_string`
-    - Removes all non-printable ASCII characters
-    - Eliminates all whitespace characters (including tabs and newlines)
-    - Converts the final result to lowercase
-
-    This is used internally for both fuzzy (substring) and exact label matching
-    to ensure robustness against formatting differences in raw data.
+    Includes column headers followed by all cell values. Replaces NaNs with empty strings.
 
     Args:
-        text (object): The input to normalize. Can be a string, number, None, or other type.
+        df (pd.DataFrame): DataFrame to flatten.
 
     Returns:
-        str: A fully normalized lowercase string, stripped of whitespace and non-printable characters.
+        list[str]: Flat list containing all header and cell values.
     """
-    normalized = normalize_to_string(text)
-    return remove_all_whitespace(remove_non_printable_ascii(normalized)).lower()
+    df_clean = df.fillna(EMPTY_CELL_REPLACEMENT)
+    headers = df_clean.columns.tolist()
+    rows = df_clean.to_numpy().flatten().tolist()
+    return headers + rows
+
+
+def has_all_labels_in_a_row(name: str, df: pd.DataFrame, required_labels: list[str]) -> bool:
+    """
+    Checks whether the DataFrame contains all required labels in any single row.
+
+    This function identifies the best-matching row in the sheet (based on
+    overlap with `required_labels`) and returns True only if all labels are
+    found in that row.
+
+    Args:
+        name (str): The name of the sheet (used for logging or diagnostics).
+        df (pd.DataFrame): The sheet data to evaluate.
+        required_labels (list[str]): Expected column header labels to look for.
+
+    Returns:
+        bool: True if all required labels are found in one row, False otherwise.
+    """
+    unmatched_labels = find_unmatched_labels_in_best_row(df, required_labels)
+
+    if not unmatched_labels:
+        # TODO: logger.info(f"✅ Sheet '{name}' contains all required labels.")
+        return True
+    else:
+        # TODO: logger.debug(f"⚠️ Sheet '{name}' is missing labels: {unmatched_labels}")
+        return False
