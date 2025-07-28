@@ -1,5 +1,12 @@
 # This script will search and run all unit tests located in the "tests" folder
 
+# NOTE:
+# To ensure accurate discovery of all unit tests under the "tests" directory and its subdirectories,
+# every subfolder containing unit tests must be a Python module. This requires that each folder within
+# the "tests" hierarchy include an `__init__.py` file. Without these files, the `unittest` discovery
+# mechanism may fail to locate and execute all test cases correctly.
+
+
 import os
 import subprocess
 import sys
