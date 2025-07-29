@@ -150,21 +150,23 @@ def extract_header(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
     return bom_header
 
 
-def extract_label_value(data: list[str], label: str) -> str:
+def extract_label_value(data: list[str], label: str, skip_empty=True) -> str:
     """
     Extracts the value corresponding to a label from a flat list of alternating label-value pairs.
 
-    Performs normalized substring matching to locate the label, then returns the next element as the value.
+    Performs normalized substring matching to locate the label, then returns the next non-empty
+    element as the value (unless skip_empty is False).
 
     Args:
-        data (list[str]): List of strings containing labels and values.
+        data (list[str]): Flat list of strings with label and value in sequence.
         label (str): Label whose associated value is to be retrieved.
+        skip_empty (bool): If True, skips over empty or whitespace-only values when looking for the value.
 
     Returns:
-        str: The value found next to the matched label. Returns an empty string if label is not found.
+        str: The value found after the matched label, or an empty string if the label is not found.
 
     Raises:
-        ValueError: If the label is matched but no value follows it.
+        ValueError: If the label is matched but no valid value follows it.
     """
     label_index = _search_label_index(data, label)
 
@@ -172,11 +174,12 @@ def extract_label_value(data: list[str], label: str) -> str:
         # TODO: Log a warning when value for label is not found
         return ""
 
-    try:
-        return data[label_index + 1]
-    except:
-        # Raise an error when label is found but not value as all labels should have a value
-        raise ValueError(f"No value found for label = {label}, at index = {label_index}.")
+    for i in range(label_index + 1, len(data)):
+        value = data[i]
+        if not skip_empty or value:  # skip empty entries
+            return value
+    # Raise an error when label is found but not value as all labels should have a value
+    raise ValueError(f"No value found for label = {label}, at index = {label_index}.")
 
 
 def extract_row_cell(row: pd.Series, column_header: str) -> str:
