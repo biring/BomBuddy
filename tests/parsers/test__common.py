@@ -209,6 +209,38 @@ class TestExtractLabelValue(unittest.TestCase):
         with self.subTest("Exact Match"):
             self.assertEqual(result, expected)
 
+    def test_successful_skip_match(self):
+        """
+        Test value extraction with a direct label match.
+        """
+        # Test data
+        data = ["Part", "ABC123", "Qty", "", "5"]
+        label = "Qty"
+        expected = "5"
+
+        # Run the function
+        result = common.extract_label_value(data, label)
+
+        # Check the result
+        with self.subTest("Skip Match"):
+            self.assertEqual(result, expected)
+
+    def test_successful_with_empty_data(self):
+        """
+        Test value extraction with a direct label match.
+        """
+        # Test data
+        data = ["", "", "", "Part", "","ABC123", "Qty", "", "", "5", "", "",]
+        label = "Qty"
+        expected = "5"
+
+        # Run the function
+        result = common.extract_label_value(data, label)
+
+        # Check the result
+        with self.subTest("Skip Match"):
+            self.assertEqual(result, expected)
+
     def test_normalized_match(self):
         """
         Test matching with label formatting differences (case, spaces).
