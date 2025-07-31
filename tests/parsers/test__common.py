@@ -100,7 +100,7 @@ class TestCreateDictFromRow(unittest.TestCase):
         })
         expected = {
             "123.0": "A",  # pandas converts int column headers to float
-            "nan": "B"  # None becomes NaN -> normalized to "nan"
+            "": "B"  # None becomes NaN -> normalized to ""
         }
         # Run the function
         result = common.create_dict_from_row(df)
@@ -230,7 +230,7 @@ class TestExtractLabelValue(unittest.TestCase):
         Test value extraction with a direct label match.
         """
         # Test data
-        data = ["", "", "", "Part", "","ABC123", "Qty", "", "", "5", "", "",]
+        data = ["", "", "", "Part", "", "ABC123", "Qty", "", "", "5", "", "", ]
         label = "Qty"
         expected = "5"
 
@@ -411,18 +411,18 @@ class TestExtractTable(unittest.TestCase):
         df = pd.DataFrame(data)
         labels = ["qty", "part", "value"]
 
-        # Expected result: all rows from index 2 and down
-        expected = pd.DataFrame(data[2:])
+        # Expected result: all rows from index 2 and down with index 2 as header
+        expected = pd.DataFrame(
+            data[3:],  # only the rows after the header row
+            columns=data[2]  # promote this to column headers
+        )
 
         # Run the function
         result = common.extract_table(df, labels)
 
         # Check the result
         with self.subTest("Successful Extraction"):
-            assert_frame_equal(
-                result.reset_index(drop=True),
-                expected.reset_index(drop=True)
-            )
+            assert_frame_equal(result, expected)
 
     def test_table_header_not_found_raises(self):
         """
