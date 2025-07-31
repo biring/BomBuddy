@@ -177,7 +177,7 @@ def extract_label_value(data: list[str], label: str, skip_empty=True) -> str:
     for i in range(label_index + 1, len(data)):
         value = data[i]
         if not skip_empty or value:  # skip empty entries
-            return value
+            return normalize_to_string(value)
     # Raise an error when label is found but not value as all labels should have a value
     raise ValueError(f"No value found for label = {label}, at index = {label_index}.")
 
@@ -205,24 +205,30 @@ def extract_table(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
     """
     Extracts the BOM component table from the given DataFrame.
 
-    Finds the most probable BOM table header row and returns all rows from that row onward.
+    Promotes the most probable BOM header row to actual column headers
+    and returns all rows beneath it as the BOM table.
 
     Args:
         df (pd.DataFrame): Full sheet as a DataFrame.
         labels (list[str]): Expected BOM header labels.
 
     Returns:
-        pd.DataFrame: BOM table including the header and all following rows.
+        pd.DataFrame: BOM table with promoted column headers and row data.
 
     Raises:
         ValueError: If no header is found or resulting table is empty.
     """
+    # Find the row that is the best match from table header
     bom_table_header_row = find_row_with_most_label_matches(df, labels)
 
     if bom_table_header_row < 0 or bom_table_header_row >= len(df):
         raise ValueError("Table extraction failed: unable to locate BOM table start row.")
 
+    # Extract the table
     bom_table = df.iloc[bom_table_header_row:]
+    bom_table.columns = bom_table.iloc[0]  # set top row as header
+    bom_table = bom_table.iloc[1:].reset_index(drop=True)  # drop the old header row
+    bom_table.columns.name = None  # ✅ clear inherited column name
 
     if bom_table.shape[0] <= 1:
         raise ValueError("Table extraction failed: no data rows found in the table.")
