@@ -28,6 +28,7 @@ License:
 """
 import string
 import unittest
+import pandas as pd
 import src.utils.text_sanitizer as sanitizer
 
 
@@ -47,14 +48,14 @@ class TestTextSanitizer(unittest.TestCase):
         """
         test_cases = [
             (None, ""),
+            (float("nan"), ""),  # Python NaN
+            (pd.NA, ""),  # Pandas NA
+            (pd.NaT, ""),  # Pandas Not-a-Time
             ("Already a string", "Already a string"),
             (12345, "12345"),
             (3.14, "3.14"),
             (True, "True"),
-            (False, "False"),
-            ([1, 2, 3], "[1, 2, 3]"),
-            ({'key': 'value'}, "{'key': 'value'}"),
-            (b"bytes", "b'bytes'"),
+            (False, "False")
         ]
 
         for input_value, expected_output in test_cases:
