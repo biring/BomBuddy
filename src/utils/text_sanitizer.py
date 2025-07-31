@@ -30,6 +30,7 @@ Notes:
 
 import re
 import string
+import pandas as pd
 
 # CHARACTER CONSTANTS
 EMPTY_STRING = ''  # No character
@@ -44,23 +45,30 @@ def normalize_to_string(text) -> str:
     """
     Normalize input to a valid string.
 
-    - Returns an empty string for None.
-    - Converts other non-string types using str().
+    - Returns an empty string for None, NaN, or pd.NA.
+    - Converts non-string types using str().
     - Leaves string inputs unchanged.
 
     This helper ensures that downstream string sanitizers can operate safely.
 
     Args:
-        text: Any input value (str, None, int, etc.)
+        text: Any input value (str, None, float, int, NaN, pd.NA, etc.)
 
     Returns:
-        str: A valid string representation safe for further processing.
+        str: A valid string representation, or "" if input was null-like.
     """
-    if not isinstance(text, str):
-        if text is None:
-            return ''
-        return str(text)
-    return text
+    # If the input is already a string, return it unchanged.
+    if isinstance(text, str):
+        return text
+
+    # If the input is None, NaN, or pd.NA, treat it as null and return an empty string.
+    if pd.isna(text):
+        return '' # Empty string for null input
+
+    # For all other types (e.g., int, float, bool, datetime, etc.),
+    # convert to string using str(). This ensures consistent string output.
+    # Example: 1.23 becomes "1.23", True becomes "True"
+    return str(text)
 
 
 def remove_non_printable_ascii(text: str) -> str:
