@@ -53,7 +53,7 @@ def _is_v3_board(name: str, sheet: pd.DataFrame) -> bool:
         bool: True if the sheet contains all required board-level identifiers, False otherwise.
     """
     # If it contains the labels that identify it as version 3 template
-    if common.has_all_labels_in_a_row(name, sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS):
+    if common.has_all_identifiers_in_single_row(name, sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS):
         # TODO: logger.info(f"✅ Sheet '{name}' is version 3 board BOM.")
         # when match found, exit
         return True
@@ -82,7 +82,7 @@ def _parse_board(sheet: pd.DataFrame) -> Board:
     board: Board = Board.empty()
 
     # Extract the board header
-    sheet_header = common.extract_header(sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
+    sheet_header = common.extract_header_block(sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
     board.header = _parse_board_header(sheet_header)
 
     # Extract the board table
@@ -110,7 +110,7 @@ def _parse_board_header(sheet_header: pd.DataFrame) -> Header:
     header_as_list = common.flatten_dataframe(sheet_header)
 
     for excel_label, model_field in BOARD_HEADER_TO_ATTR_MAP.items():
-        header_data[model_field] = common.extract_label_value(header_as_list, excel_label)
+        header_data[model_field] = common.extract_value_after_identifier(header_as_list, excel_label)
 
     return Header(**header_data)
 
@@ -153,7 +153,7 @@ def _parse_board_table_row(row: pd.Series) -> Item:
     item_data = {}
 
     for excel_label, model_field in TABLE_LABEL_TO_ATTR_MAP.items():
-        item_data[model_field] = common.extract_row_cell(row, excel_label)
+        item_data[model_field] = common.extract_cell_value_by_fuzzy_header(row, excel_label)
 
     return Item(**item_data)
 
@@ -174,7 +174,7 @@ def is_v3_bom(sheets: list[tuple[str, pd.DataFrame]]) -> bool:
     # Check each sheet in the dataframe
     for name, sheet in sheets:
         # If it contains the labels that identify it as version 3 template
-        if common.has_all_labels_in_a_row(name, sheet, REQUIRED_V3_BOM_IDENTIFIERS):
+        if common.has_all_identifiers_in_single_row(name, sheet, REQUIRED_V3_BOM_IDENTIFIERS):
             # TODO: logger.info(f"✅ Sheet '{name}' is using version 3 BOM template.")
             # TODO: logger.info(f"✅ BOM is using version 3 template.")
             return True  # when match found, exit

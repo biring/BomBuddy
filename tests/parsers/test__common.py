@@ -146,7 +146,7 @@ class TestExtractHeader(unittest.TestCase):
         expected = pd.DataFrame(data[:3])
 
         # Run the function
-        result = common.extract_header(df, labels)
+        result = common.extract_header_block(df, labels)
 
         # Check the result
         for (_, result_row), (_, expected_row) in zip(result.iterrows(), expected.iterrows()):
@@ -171,7 +171,7 @@ class TestExtractHeader(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_header(df, labels)
+            common.extract_header_block(df, labels)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__
@@ -196,7 +196,7 @@ class TestExtractHeader(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_header(df, labels)
+            common.extract_header_block(df, labels)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__
@@ -222,7 +222,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = "5"
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -238,7 +238,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = "5"
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -254,7 +254,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = "5"
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -270,7 +270,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = "EVT"
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -286,7 +286,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = ""
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -304,7 +304,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_label_value(data, label)
+            common.extract_value_after_identifier(data, label)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__
@@ -323,7 +323,7 @@ class TestExtractLabelValue(unittest.TestCase):
         expected = ""
 
         # Run the function
-        result = common.extract_label_value(data, label)
+        result = common.extract_value_after_identifier(data, label)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -347,7 +347,7 @@ class TestExtractRowCell(unittest.TestCase):
         header = "Qty"
         expected = '5'
         # Run the function
-        result = common.extract_row_cell(row, header)
+        result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -364,7 +364,7 @@ class TestExtractRowCell(unittest.TestCase):
         header = "\n component"
         expected = "Diode"
         # Run the function
-        result = common.extract_row_cell(row, header)
+        result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -380,7 +380,7 @@ class TestExtractRowCell(unittest.TestCase):
         header = "Description"
         expected = ""
         # Run the function
-        result = common.extract_row_cell(row, header)
+        result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -396,7 +396,7 @@ class TestExtractRowCell(unittest.TestCase):
         header = "Component"
         expected = ""
         # Run the function
-        result = common.extract_row_cell(row, header)
+        result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -537,7 +537,7 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         labels = ["Account", "Amount", "Date"]
         expected = 2
         # Run the functions
-        result = common.find_row_with_most_label_matches(df, labels)
+        result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -556,7 +556,7 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         labels = ["Account", "Amount", "Date"]
         expected = 1
         # Run the functions
-        result = common.find_row_with_most_label_matches(df, labels)
+        result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -573,9 +573,9 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
             ["Other", "Misc", "Notes"]
         ])
         labels = ["Account", "Amount", "Date"]
-        expected = common.NO_BEST_MATCH_ROW
+        expected = common.ROW_INDEX_NOT_FOUND
         # Run the functions
-        result = common.find_row_with_most_label_matches(df, labels)
+        result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -618,7 +618,7 @@ class TestFlattenDataFrame(unittest.TestCase):
         })
 
         # Expected output: NaNs replaced with EMPTY_CELL_REPLACEMENT, headers included at start
-        expected = ["Col1", "Col2", common.EMPTY_CELL_REPLACEMENT, "3.14", "data", common.EMPTY_CELL_REPLACEMENT]
+        expected = ["Col1", "Col2", common.DEFAULT_EMPTY_CELL_VALUE, "3.14", "data", common.DEFAULT_EMPTY_CELL_VALUE]
 
         # Run the function
         result = common.flatten_dataframe(df)
@@ -713,7 +713,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount", "date"]
         expected = []
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -732,7 +732,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount", "date"]
         expected = ["account", "date"]
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -751,7 +751,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount"]
         expected = labels
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -768,7 +768,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount", "date"]
         expected = []
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -783,7 +783,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account"]
         expected = labels
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -800,7 +800,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = []
         expected = []
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -819,7 +819,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount", "date"]
         expected = []
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -837,7 +837,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = [" account\n", "  amount\t", "\x0bdate  "]
         expected = []
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         # Check the result
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
@@ -855,7 +855,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         labels = ["account", "amount", "date"]
         expected = labels
         # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
+        result = common.find_unmatched_identifiers_in_best_row(df, labels)
         for result_value, expected_value in zip(result, expected):
             with self.subTest(Out=result_value, Exp=expected_value):
                 self.assertEqual(result_value, expected_value)
@@ -882,7 +882,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         expected = True
 
         # Run the function
-        result = common.has_all_labels_in_a_row("TestSheet", df, required_labels)
+        result = common.has_all_identifiers_in_single_row("TestSheet", df, required_labels)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -903,7 +903,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         expected = False
 
         # Run the function
-        result = common.has_all_labels_in_a_row("PartialSheet", df, required_labels)
+        result = common.has_all_identifiers_in_single_row("PartialSheet", df, required_labels)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -925,7 +925,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         expected = False
 
         # Run the function
-        result = common.has_all_labels_in_a_row("SplitSheet", df, required_labels)
+        result = common.has_all_identifiers_in_single_row("SplitSheet", df, required_labels)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -943,7 +943,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         expected = False
 
         # Run the function
-        result = common.has_all_labels_in_a_row("EmptySheet", df, required_labels)
+        result = common.has_all_identifiers_in_single_row("EmptySheet", df, required_labels)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -963,7 +963,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         expected = True
 
         # Run the function
-        result = common.has_all_labels_in_a_row("NoLabels", df, required_labels)
+        result = common.has_all_identifiers_in_single_row("NoLabels", df, required_labels)
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
@@ -984,7 +984,7 @@ class TestNormalizeLabelText(unittest.TestCase):
         input_text = "  Part\nNumber\t "
         expected = "partnumber"
         # Run the function
-        result = common._normalize_label_text(input_text)
+        result = common._normalize_identifier(input_text)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -997,7 +997,7 @@ class TestNormalizeLabelText(unittest.TestCase):
         input_text = "value"
         expected = "value"
         # Run the function
-        result = common._normalize_label_text(input_text)
+        result = common._normalize_identifier(input_text)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -1018,7 +1018,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         label = "Quantity"
         expected = 1
         # Run the function
-        result = common._search_label_index(data, label)
+        result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -1030,9 +1030,9 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Test data
         data = ["  Component (Type)", "Qty", "Nominal\nValue"]
         label = "component"
-        expected = common.NO_MATCH_IN_LIST
+        expected = common.LIST_INDEX_NOT_FOUND
         # Run the function
-        result = common._search_label_index(data, label)
+        result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -1046,7 +1046,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         label = "description"
         expected = 1
         # Run the function
-        result = common._search_label_index(data, label)
+        result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -1058,9 +1058,9 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Test data
         data = ["Qty", "Part", "Cost"]
         label = "Description"
-        expected = common.NO_MATCH_IN_LIST
+        expected = common.LIST_INDEX_NOT_FOUND
         # Run the function
-        result = common._search_label_index(data, label)
+        result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
@@ -1072,9 +1072,9 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Test data
         data = []
         label = "Qty"
-        expected = common.NO_MATCH_IN_LIST
+        expected = common.LIST_INDEX_NOT_FOUND
         # Run the function
-        result = common._search_label_index(data, label)
+        result = common._find_identifier_index(data, label)
 
         with self.subTest(Out=result, Exp=expected):
                 self.assertEqual(result, expected)
