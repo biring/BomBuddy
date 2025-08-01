@@ -32,7 +32,6 @@ License:
 """
 
 import re
-import string
 import pandas as pd
 
 # CHARACTER CONSTANTS
@@ -74,24 +73,6 @@ def normalize_to_string(text) -> str:
     return str(text)
 
 
-def remove_non_printable_ascii(text: str) -> str:
-    """
-    Remove all non-printable ASCII characters from the input string.
-
-    This includes control characters and special formatting codes outside the
-    standard printable ASCII range. Useful for sanitizing strings from logs,
-    user inputs, or external files where hidden or corrupted characters may exist.
-
-    Args:
-        text (str): The input string to sanitize.
-
-    Returns:
-        str: A cleaned string containing only printable ASCII characters.
-    """
-    printable = set(string.printable)
-    return ''.join(ch for ch in text if ch in printable)
-
-
 def normalize_spaces(text: str) -> str:
     """
     Normalize spacing by collapsing multiple spaces into one and trimming edges.
@@ -107,24 +88,6 @@ def normalize_spaces(text: str) -> str:
         str: A string with normalized spacing (single spaces between words).
     """
     return MULTIPLE_SPACES_REGEX.sub(SPACE_CHAR, text).strip()
-
-
-def remove_standard_spaces(text: str) -> str:
-    """
-    Removes all standard ASCII space characters (U+0020) from the input string.
-
-    This function deletes only the standard space character (' ', Unicode U+0020),
-    while preserving all other characters, including non-ASCII whitespace such as
-    tabs ('\\t'), newlines ('\\n'), carriage returns ('\\r'), and other Unicode
-    space characters (e.g., non-breaking space, em-space).
-
-    Args:
-        text (str): The input string from which standard space characters will be removed.
-
-    Returns:
-        str: A string with all standard ASCII space characters removed; all other characters remain unchanged.
-    """
-    return text.replace(SPACE_CHAR, EMPTY_STRING)
 
 
 def remove_all_whitespace(text: str) -> str:

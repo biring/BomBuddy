@@ -63,41 +63,6 @@ class TestTextSanitizer(unittest.TestCase):
                 result = sanitizer.normalize_to_string(input_value)
                 self.assertEqual(result, expected_output)
 
-    def test_remove_non_printable_ascii(self):
-        """
-        Tests removal of non-printable ASCII characters from input strings.
-
-        Ensures that the `strip_non_printable_ascii` function removes all ASCII control
-        characters (except those that are considered printable like \n and \t), while
-        preserving all valid printable characters.
-        """
-        # Get all non-printable ASCII characters (excluding those in string.printable)
-        non_printable = ''.join(
-            chr(i) for i in list(range(0, 32)) + [127]
-            if chr(i) not in string.printable
-        )
-
-        test_cases = [
-            ("Hello, World!", "Hello, World!"),
-            ("Hello\x00World", "HelloWorld"),
-            ("Clean\x07Text", "CleanText"),
-            ("\x01\x02Test\x03\x04", "Test"),
-            ("Normal \n Tab\t", "Normal \n Tab\t"),
-            ("Valid123!@#\x1F\x7F", "Valid123!@#"),
-            ("", ""),
-            ("\x00\x01\x02", ""),
-            (string.ascii_letters, string.ascii_letters),
-            (string.digits, string.digits),
-            (string.punctuation, string.punctuation),
-            (string.whitespace, string.whitespace),
-            (non_printable, ""),
-        ]
-
-        for input_text, expected_output in test_cases:
-            with self.subTest(input_text=repr(input_text)):
-                actual = sanitizer.remove_non_printable_ascii(input_text)
-                self.assertEqual(actual, expected_output)
-
     def test_normalize_spaces(self):
         """
         Tests normalization of excessive internal and surrounding spaces.
@@ -122,32 +87,6 @@ class TestTextSanitizer(unittest.TestCase):
         for input_text, expected_output in test_cases:
             with self.subTest(input_text=input_text):
                 self.assertEqual(sanitizer.normalize_spaces(input_text), expected_output)
-
-    def test_remove_standard_spaces(self):
-        """
-        Validates that only standard ASCII space characters (U+0020) are removed from the input string.
-
-        This test ensures that the `remove_standard_spaces` function eliminates all instances
-        of the standard space character (' '), while preserving all other characters — including
-        tabs ('\\t'), newlines ('\\n'), carriage returns, and any non-ASCII whitespace or symbols.
-
-        The test covers edge cases such as empty strings, strings with no spaces, strings with
-        leading, trailing, and internal spaces, as well as strings containing mixed whitespace types.
-        """
-        test_cases = [
-            ("", ""),
-            ("NoSpacesHere", "NoSpacesHere"),
-            ("     ", ""),
-            ("Line\twith\nspaces and\tothers", "Line\twith\nspacesand\tothers"),
-            ("  leading and trailing  ", "leadingandtrailing"),
-            ("Multiple   internal   spaces", "Multipleinternalspaces"),
-            ("Tēxt wīth spāces", "Tēxtwīthspāces"),
-        ]
-
-        for input_text, expected_output in test_cases:
-            with self.subTest(input_text=input_text):
-                actual = sanitizer.remove_standard_spaces(input_text)
-                self.assertEqual(actual, expected_output)
 
     def test_remove_all_whitespace(self):
         """

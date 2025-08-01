@@ -22,15 +22,11 @@ Note:
 from .text_sanitizer import (
     normalize_spaces,
     normalize_to_string,
-    remove_all_whitespace,
-    remove_non_printable_ascii,
-    remove_standard_spaces,
+    remove_all_whitespace
 )
 
 __all__ = [
     "normalize_spaces",
     "normalize_to_string",
-    "remove_all_whitespace",
-    "remove_non_printable_ascii",
-    "remove_standard_spaces",
+    "remove_all_whitespace"
 ]
