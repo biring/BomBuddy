@@ -26,6 +26,9 @@ Notes:
  - Public functions should be imported via `src.utils` where possible to preserve API boundaries.
  - Designed for use in BOM parsing and other text preprocessing utilities.
  - Keeps separation of concerns between structure parsing and text cleanup.
+
+License:
+ - Internal Use Only
 """
 
 import re
@@ -63,7 +66,7 @@ def normalize_to_string(text) -> str:
 
     # If the input is None, NaN, or pd.NA, treat it as null and return an empty string.
     if pd.isna(text):
-        return '' # Empty string for null input
+        return ''  # Empty string for null input
 
     # For all other types (e.g., int, float, bool, datetime, etc.),
     # convert to string using str(). This ensures consistent string output.
@@ -79,15 +82,12 @@ def remove_non_printable_ascii(text: str) -> str:
     standard printable ASCII range. Useful for sanitizing strings from logs,
     user inputs, or external files where hidden or corrupted characters may exist.
 
-    Handles None and non-string inputs gracefully by converting them to strings.
-
     Args:
         text (str): The input string to sanitize.
 
     Returns:
         str: A cleaned string containing only printable ASCII characters.
     """
-    text = normalize_to_string(text)
     printable = set(string.printable)
     return ''.join(ch for ch in text if ch in printable)
 
@@ -100,15 +100,12 @@ def normalize_spaces(text: str) -> str:
     single space and removes leading and trailing spaces. It is useful for
     cleaning user input or text data with irregular spacing.
 
-    Handles None and non-string inputs gracefully by converting them to strings.
-
     Args:
         text (str): The input string to normalize.
 
     Returns:
         str: A string with normalized spacing (single spaces between words).
     """
-    text = normalize_to_string(text)
     return MULTIPLE_SPACES_REGEX.sub(SPACE_CHAR, text).strip()
 
 
@@ -121,15 +118,12 @@ def remove_standard_spaces(text: str) -> str:
     tabs ('\\t'), newlines ('\\n'), carriage returns ('\\r'), and other Unicode
     space characters (e.g., non-breaking space, em-space).
 
-    Handles None and non-string inputs gracefully by converting them to strings.
-
     Args:
         text (str): The input string from which standard space characters will be removed.
 
     Returns:
         str: A string with all standard ASCII space characters removed; all other characters remain unchanged.
     """
-    text = normalize_to_string(text)
     return text.replace(SPACE_CHAR, EMPTY_STRING)
 
 
@@ -142,13 +136,10 @@ def remove_all_whitespace(text: str) -> str:
     vertical tabs ('\\v'), and form feeds ('\\f'). It is useful for compacting
     a string or preparing it for strict formatting or validation.
 
-    Handles None and non-string inputs gracefully by converting them to strings.
-
     Args:
         text (str): The input string to clean.
 
     Returns:
         str: A string with all whitespace characters removed.
     """
-    text = normalize_to_string(text)
     return WHITE_SPACE_REGEX.sub(EMPTY_STRING, text)
