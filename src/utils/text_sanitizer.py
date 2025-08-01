@@ -45,19 +45,19 @@ MULTIPLE_SPACES_REGEX = re.compile(r' {2,}')  # Matches two or more consecutive 
 
 def normalize_to_string(text) -> str:
     """
-    Normalize input to a valid string.
+    Converts any input value into a valid string representation.
 
-    - Returns an empty string for None, NaN, or pd.NA.
-    - Converts non-string types using str().
-    - Leaves string inputs unchanged.
-
-    This helper ensures that downstream string sanitizers can operate safely.
+    Returns an empty string for null-like inputs (None, NaN, pd.NA, pd.NaT),
+    preserves strings unchanged, and uses `str()` for all other data types.
+    This normalization step ensures consistent and safe string input for
+    downstream sanitization and parsing routines.
 
     Args:
-        text: Any input value (str, None, float, int, NaN, pd.NA, etc.)
+        text (Any): Input value to normalize. Can be a string, None, float, int,
+                    boolean, pandas NA/NaT, or any other type.
 
     Returns:
-        str: A valid string representation, or "" if input was null-like.
+        str: Normalized string representation of the input, or an empty string if input is null-like.
     """
     # If the input is already a string, return it unchanged.
     if isinstance(text, str):
@@ -75,34 +75,36 @@ def normalize_to_string(text) -> str:
 
 def normalize_spaces(text: str) -> str:
     """
-    Normalize spacing by collapsing multiple spaces into one and trimming edges.
+    Collapses multiple consecutive spaces and trims surrounding whitespace.
 
-    This function replaces two or more consecutive space characters with a
-    single space and removes leading and trailing spaces. It is useful for
-    cleaning user input or text data with irregular spacing.
+    Replaces two or more adjacent ASCII space characters (' ') with a single space,
+    and removes any leading or trailing spaces. Does not affect tabs, newlines, or
+    other non-space whitespace characters.
+
+    Useful for normalizing user input or cleaning up text with inconsistent spacing.
 
     Args:
-        text (str): The input string to normalize.
+        text (str): The input string containing irregular spacing.
 
     Returns:
-        str: A string with normalized spacing (single spaces between words).
+        str: A cleaned string with single spaces between words and no leading/trailing spaces.
     """
     return MULTIPLE_SPACES_REGEX.sub(SPACE_CHAR, text).strip()
 
 
 def remove_all_whitespace(text: str) -> str:
     """
-    Remove all whitespace characters from the input string.
+    Removes all Unicode whitespace characters from the input string.
 
-    This function eliminates all types of Unicode whitespace characters, including
-    spaces (' '), tabs ('\\t'), newlines ('\\n'), carriage returns ('\\r'),
-    vertical tabs ('\\v'), and form feeds ('\\f'). It is useful for compacting
-    a string or preparing it for strict formatting or validation.
+    This includes standard ASCII spaces (' '), tabs ('\\t'), newlines ('\\n'),
+    carriage returns ('\\r'), vertical tabs ('\\v'), and form feeds ('\\f'),
+    as well as any other Unicode-defined whitespace. Useful for compacting
+    strings or preparing them for strict formatting or comparison.
 
     Args:
         text (str): The input string to clean.
 
     Returns:
-        str: A string with all whitespace characters removed.
+        str: The input string with all whitespace characters removed.
     """
     return WHITE_SPACE_REGEX.sub(EMPTY_STRING, text)
