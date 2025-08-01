@@ -18,10 +18,7 @@ Example Usage:
 Dependencies:
  - Python >= 3.10
  - pandas
- - src.utils.text_sanitizer:
-     - normalize_to_string
-     - remove_all_whitespace
-     - remove_non_printable_ascii
+ - src.utils.text_sanitizer
 
 Notes:
  - Designed for internal use; functions are not part of a public API.
@@ -37,8 +34,7 @@ from typing import Final
 import pandas as pd
 from src.utils import (
     normalize_to_string,
-    remove_all_whitespace,
-    remove_non_printable_ascii,
+    remove_all_whitespace
 )
 
 # Module constants
@@ -54,7 +50,6 @@ def _normalize_label_text(text: object) -> str:
     This helper function standardizes various types of input to enable
     reliable comparison of label strings. It performs the following:
     - Converts the input to a string using `normalize_to_string`
-    - Removes all non-printable ASCII characters
     - Eliminates all whitespace characters (including tabs and newlines)
     - Converts the final result to lowercase
 
@@ -62,13 +57,12 @@ def _normalize_label_text(text: object) -> str:
     to ensure robustness against formatting differences in raw data.
 
     Args:
-        text (object): The input to normalize. Can be a string, number, None, or other type.
+        text (object): The input to normalize.
 
     Returns:
-        str: A fully normalized lowercase string, stripped of whitespace and non-printable characters.
+        str: A fully normalized lowercase string, stripped of whitespace.
     """
-    normalized = normalize_to_string(text)
-    return remove_all_whitespace(remove_non_printable_ascii(normalized)).lower()
+    return remove_all_whitespace(normalize_to_string(text)).lower()
 
 
 def _search_label_index(data: list[str], label: str) -> int:
@@ -76,7 +70,7 @@ def _search_label_index(data: list[str], label: str) -> int:
     Searches for the index of a label in a list using normalized exact matching.
 
     This function normalizes both the label and list elements using
-    `_normalize_label_text`, and returns the index of the first exact match.
+    `_normalize_label_text` to find an exact match, and returns the index of the first match.
 
     Used to locate label positions in flattened metadata lists.
 
@@ -97,25 +91,19 @@ def _search_label_index(data: list[str], label: str) -> int:
 def create_dict_from_row(row: pd.Series) -> dict[str, str]:
     """
     Converts a one-row pandas DataFrame (Series) into a dictionary
-    with normalized column names as keys and cell values.
-
-        This function is intended for processing metadata or BOM rows where column headers
-        may be inconsistently formatted. Each column label is normalized and used as a key,
-        with the corresponding cell value converted to a string if needed.This is useful
-        when extracting key-value pairs from BOM or metadata rows where headers may be
-        inconsistently formatted.
+    with column names as keys and cell values.
 
     Args:
         row (pd.Series): A single row from a pandas DataFrame.
 
     Returns:
-        dict[str, str]: Dictionary with normalized keys and string values.
+        dict[str, str]: Dictionary with keys and string values.
     """
     dictionary = {}
 
     for column_label, cell_value in row.items():
-        key = _normalize_label_text(column_label)
-        dictionary[key] = cell_value
+        key = normalize_to_string(column_label)
+        dictionary[key] = normalize_to_string(cell_value)
 
     return dictionary
 
@@ -152,7 +140,7 @@ def extract_header(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
 
 def extract_label_value(data: list[str], label: str, skip_empty=True) -> str:
     """
-    Extracts the value corresponding to a label from a flat list of alternating label-value pairs.
+    Extracts the value corresponding to a label from a flat list of label-value pairs in sequence.
 
     Performs normalized substring matching to locate the label, then returns the next non-empty
     element as the value (unless skip_empty is False).
@@ -184,7 +172,7 @@ def extract_label_value(data: list[str], label: str, skip_empty=True) -> str:
 
 def extract_row_cell(row: pd.Series, column_header: str) -> str:
     """
-    Extracts and normalizes the value of a cell from a row using fuzzy column header matching.
+    Extracts value for the column header using fuzzy matching.
 
     Normalizes both the requested column header and the row’s keys to allow resilient lookup.
 
@@ -193,12 +181,15 @@ def extract_row_cell(row: pd.Series, column_header: str) -> str:
         column_header (str): The desired column header to search for.
 
     Returns:
-        str: Normalized string value if found; empty string otherwise.
+        str: String value if found; empty string otherwise.
     """
-    norm_column_header = _normalize_label_text(column_header)
-    normalized_row = create_dict_from_row(row)
-    value = normalized_row.get(norm_column_header, "")
-    return normalize_to_string(value)
+    data = create_dict_from_row(row)
+
+    for key, value in data.items():
+        if _normalize_label_text(key) == _normalize_label_text(column_header):
+            return normalize_to_string(value)
+
+    return EMPTY_CELL_REPLACEMENT
 
 
 def extract_table(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
@@ -337,7 +328,7 @@ def flatten_dataframe(df: pd.DataFrame) -> list[str]:
     """
     Flattens the entire DataFrame into a single list of strings.
 
-    Includes column headers followed by all cell values. Replaces NaNs with empty strings.
+    Includes column headers followed by all cell values. All values are converted to string
 
     Args:
         df (pd.DataFrame): DataFrame to flatten.
@@ -345,10 +336,18 @@ def flatten_dataframe(df: pd.DataFrame) -> list[str]:
     Returns:
         list[str]: Flat list containing all header and cell values.
     """
-    df_clean = df.fillna(EMPTY_CELL_REPLACEMENT)
-    headers = df_clean.columns.tolist()
-    rows = df_clean.to_numpy().flatten().tolist()
-    return headers + rows
+    flat_list = []
+
+    # Include column headers
+    for header in df.columns:
+        flat_list.append(normalize_to_string(header))
+
+    # Include all cell values
+    for _, row in df.iterrows():
+        for cell in row:
+            flat_list.append(normalize_to_string(cell))
+
+    return flat_list
 
 
 def has_all_labels_in_a_row(name: str, df: pd.DataFrame, required_labels: list[str]) -> bool:

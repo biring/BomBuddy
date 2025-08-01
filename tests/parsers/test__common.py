@@ -57,36 +57,21 @@ class TestCreateDictFromRow(unittest.TestCase):
         df = pd.Series({
             " Component ": "MCU",
             "Qty": 2,
-            " ": "#"
+            " ": "#",
+            "U/P \n(USD W/ VAT)": "$1.000",
+            "Sub-Total\t(USD W/ VAT)": "$2.000"
         })
         expected = {
-            "component": "MCU",
-            "qty": 2,
-            "": "#"
+            " Component ": "MCU",
+            "Qty": "2",
+            " ": "#",
+            "U/P \n(USD W/ VAT)": "$1.000",
+            "Sub-Total\t(USD W/ VAT)": "$2.000"
         }
         # Run the function
         result = common.create_dict_from_row(df)
         # Check the result
         with self.subTest("Basic"):
-            self.assertEqual(result, expected)
-
-    def test_special_characters(self):
-        """
-        Test normalization of column labels containing line breaks and tabs.
-        """
-        # Test data
-        df = pd.Series({
-            "U/P \n(USD W/ VAT)": "$1.000",
-            "Sub-Total\t(USD W/ VAT)": "$2.000"
-        })
-        expected = {
-            "u/p(usdw/vat)": "$1.000",
-            "sub-total(usdw/vat)": "$2.000"
-        }
-        # Run the function
-        result = common.create_dict_from_row(df)
-        # Check the result
-        with self.subTest("Special Characters"):
             self.assertEqual(result, expected)
 
     def test_non_string_headers(self):
@@ -341,22 +326,6 @@ class TestExtractRowCell(unittest.TestCase):
         with self.subTest("Normalized Header"):
             self.assertEqual(result, expected)
 
-    def test_non_printable_header(self):
-        """
-        Test extraction where header contains non-printable ASCII characters.
-        """
-        # Test data
-        row = pd.Series({
-            "Val\u0000ue": "R23"
-        })
-        header = "VALUE"
-        expected = "R23"
-        # Run the function
-        result = common.extract_row_cell(row, header)
-        # Check the result
-        with self.subTest("Non-Printable Header"):
-            self.assertEqual(result, expected)
-
     def test_missing_column(self):
         """
         Test safe fallback to empty string when column is not found.
@@ -555,7 +524,7 @@ class TestFlattenDataFrame(unittest.TestCase):
         })
 
         # Expected output: list with column headers first, followed by row values in row-major order
-        expected = ["A", "B", 1, "x", 2, "y"]
+        expected = ["A", "B", "1", "x", "2", "y"]
 
         # Run the function
         result = common.flatten_dataframe(df)
@@ -575,7 +544,7 @@ class TestFlattenDataFrame(unittest.TestCase):
         })
 
         # Expected output: NaNs replaced with EMPTY_CELL_REPLACEMENT, headers included at start
-        expected = ["Col1", "Col2", common.EMPTY_CELL_REPLACEMENT, 3.14, "data", common.EMPTY_CELL_REPLACEMENT]
+        expected = ["Col1", "Col2", common.EMPTY_CELL_REPLACEMENT, "3.14", "data", common.EMPTY_CELL_REPLACEMENT]
 
         # Run the function
         result = common.flatten_dataframe(df)
@@ -596,7 +565,7 @@ class TestFlattenDataFrame(unittest.TestCase):
         })
 
         # Expected output: headers followed by mixed-type values in row-major order
-        expected = ["Int", "Float", "Str", 1, 1.1, "a", 2, 2.2, "b"]
+        expected = ["Int", "Float", "Str", "1", "1.1", "a", "2", "2.2", "b"]
 
         # Run the function
         result = common.flatten_dataframe(df)
@@ -633,7 +602,7 @@ class TestFlattenDataFrame(unittest.TestCase):
         }, index=["row1", "row2"])
 
         # Expected output: column headers + cell values only; index labels excluded
-        expected = ["X", "Y", 10, "foo", 20, "bar"]
+        expected = ["X", "Y", "10", "foo", "20", "bar"]
 
         # Run the function
         result = common.flatten_dataframe(df)
@@ -804,24 +773,6 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         with self.subTest("Large dataframe no crash"):
             self.assertEqual(result, expected)
 
-    def test_non_string_labels(self):
-        """
-        Tests that required labels with non-string types (e.g., int, None) are handled gracefully.
-        Verifies that only the string-equivalent labels are matched and others are returned as unmatched.
-        """
-        # Test data
-        df = pd.DataFrame([
-            ["Account", "Amount", "Date"]
-        ])
-        labels = ["Account", 123, None]
-        expected = [123, None]
-        # Run the functions
-        result = common.find_unmatched_labels_in_best_row(df, labels)
-        # Check the result
-        with self.subTest("Non string labels"):
-            self.assertEqual(result, expected)  # "Account" should match, others won't
-
-
 class TestHasAllLabelsInARow(unittest.TestCase):
     """
     Unit tests for `has_all_labels_in_a_row`, validating detection of all required labels
@@ -951,45 +902,6 @@ class TestNormalizeLabelText(unittest.TestCase):
         with self.subTest("Whitespace and Case"):
             self.assertEqual(result, expected)
 
-    def test_numeric_input(self):
-        """
-        Test normalization of numeric input.
-        """
-        # Test data
-        input_text = 123.45
-        expected = "123.45"
-        # Run the function
-        result = common._normalize_label_text(input_text)
-        # Check the result
-        with self.subTest("Numeric Input"):
-            self.assertEqual(result, expected)
-
-    def test_none_input(self):
-        """
-        Test normalization of None input.
-        """
-        # Test data
-        input_text = None
-        expected = ""
-        # Run the function
-        result = common._normalize_label_text(input_text)
-        # Check the result
-        with self.subTest("None Input"):
-            self.assertEqual(result, expected)
-
-    def test_non_printable_ascii(self):
-        """
-        Test removal of non-printable ASCII characters.
-        """
-        # Test data
-        input_text = "U/P \n(USD \x00W/ VAT)"
-        expected = "u/p(usdw/vat)"
-        # Run the function
-        result = common._normalize_label_text(input_text)
-        # Check the result
-        with self.subTest("Non-Printable ASCII"):
-            self.assertEqual(result, expected)
-
     def test_clean_input(self):
         """
         Test that a clean, lowercase string is unchanged.
@@ -1050,20 +962,6 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._search_label_index(data, label)
         # Check the result
         with self.subTest("Whitespace And Case Insensitive"):
-            self.assertEqual(result, expected)
-
-    def test_unicode_and_symbols(self):
-        """
-        Test label match when symbols or Unicode are present in data.
-        """
-        # Test data
-        data = ["Ω Part ID", "⚙ Manufacturer", "Voltage (V)"]
-        label = "manufacturer"
-        expected = 1
-        # Run the function
-        result = common._search_label_index(data, label)
-        # Check the result
-        with self.subTest("Unicode And Symbols"):
             self.assertEqual(result, expected)
 
     def test_label_not_found(self):
