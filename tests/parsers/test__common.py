@@ -38,7 +38,6 @@ License:
 
 import unittest
 import pandas as pd
-from pandas.testing import assert_frame_equal
 
 # noinspection PyProtectedMember
 import src.parsers._common as common
@@ -71,8 +70,13 @@ class TestCreateDictFromRow(unittest.TestCase):
         # Run the function
         result = common.create_dict_from_row(df)
         # Check the result
-        with self.subTest("Basic"):
-            self.assertEqual(result, expected)
+        for result_key, expected_key in zip(result, expected):
+            with self.subTest(Out=result_key, Exp=expected_key):
+                self.assertEqual(result_key, expected_key)
+            result_value = result[result_key]
+            expected_value = expected[expected_key]
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_non_string_headers(self):
         """
@@ -90,8 +94,13 @@ class TestCreateDictFromRow(unittest.TestCase):
         # Run the function
         result = common.create_dict_from_row(df)
         # Check the result
-        with self.subTest("Non-String Headers"):
-            self.assertEqual(result, expected)
+        for result_key, expected_key in zip(result, expected):
+            with self.subTest(Out=result_key, Exp=expected_key):
+                self.assertEqual(result_key, expected_key)
+            result_value = result[result_key]
+            expected_value = expected[expected_key]
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_empty_row(self):
         """
@@ -103,8 +112,13 @@ class TestCreateDictFromRow(unittest.TestCase):
         # Run the function
         result = common.create_dict_from_row(df)
         # Check the result
-        with self.subTest("Empty Row"):
-            self.assertEqual(result, expected)
+        for result_key, expected_key in zip(result, expected):
+            with self.subTest(Out=result_key, Exp=expected_key):
+                self.assertEqual(result_key, expected_key)
+            result_value = result[result_key]
+            expected_value = expected[expected_key]
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
 
 class TestExtractHeader(unittest.TestCase):
@@ -119,8 +133,9 @@ class TestExtractHeader(unittest.TestCase):
         """
         # Test data: first 2 rows are metadata, 3rd row is BOM header
         data = [
-            ["Rev A", "", ""],
-            ["Build: EVT", "", ""],
+            ["Rev:", "A"],
+            [],
+            ["Build:", "EB5",""],
             ["Qty", "Part", "Value"],
             ["1", "R1", "10k"]
         ]
@@ -128,14 +143,17 @@ class TestExtractHeader(unittest.TestCase):
         labels = ["qty", "part", "value"]
 
         # Expected result: rows above the BOM header
-        expected = pd.DataFrame(data[:2])
+        expected = pd.DataFrame(data[:3])
 
         # Run the function
         result = common.extract_header(df, labels)
 
         # Check the result
-        with self.subTest("Successful Extraction"):
-            assert_frame_equal(result.reset_index(drop=True), expected)
+        for (_, result_row), (_, expected_row) in zip(result.iterrows(), expected.iterrows()):
+            for result_value, expected_value in zip(result_row, expected_row):
+                with self.subTest(Out=result_value, Exp=expected_value):
+                    self.assertEqual(result_value, expected_value)
+
 
     def test_empty_header_block_raises(self):
         """
@@ -149,10 +167,18 @@ class TestExtractHeader(unittest.TestCase):
         df = pd.DataFrame(data)
         labels = ["qty", "part", "value"]
 
-        # Run the function and check that it raises ValueError (any message)
-        with self.subTest("Empty Header Block"):
-            with self.assertRaises(ValueError):
-                common.extract_header(df, labels)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_header(df, labels)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
     def test_no_match_raises(self):
         """
@@ -166,10 +192,18 @@ class TestExtractHeader(unittest.TestCase):
         df = pd.DataFrame(data)
         labels = ["qty", "part", "value"]
 
-        # Run the function and check that it raises ValueError (any message)
-        with self.subTest("No Match Found"):
-            with self.assertRaises(ValueError):
-                common.extract_header(df, labels)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_header(df, labels)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
 
 class TestExtractLabelValue(unittest.TestCase):
@@ -191,8 +225,8 @@ class TestExtractLabelValue(unittest.TestCase):
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Exact Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_successful_skip_match(self):
         """
@@ -207,8 +241,8 @@ class TestExtractLabelValue(unittest.TestCase):
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Skip Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_successful_with_empty_data(self):
         """
@@ -223,8 +257,8 @@ class TestExtractLabelValue(unittest.TestCase):
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Skip Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_normalized_match(self):
         """
@@ -239,8 +273,8 @@ class TestExtractLabelValue(unittest.TestCase):
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Normalized Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_label_not_found_returns_empty(self):
         """
@@ -255,8 +289,8 @@ class TestExtractLabelValue(unittest.TestCase):
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Label Not Found"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_label_found_but_no_value_raises(self):
         """
@@ -266,10 +300,18 @@ class TestExtractLabelValue(unittest.TestCase):
         data = ["Rev", "A", "Build", "EVT", "Stage"]
         label = "Stage"
 
-        # Run the function and expect ValueError
-        with self.subTest("Label Found but No Value"):
-            with self.assertRaises(ValueError):
-                common.extract_label_value(data, label)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_label_value(data, label)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
     def test_empty_input_returns_empty(self):
         """
@@ -278,13 +320,14 @@ class TestExtractLabelValue(unittest.TestCase):
         # Test data
         data = []
         label = "Part"
+        expected = ""
 
         # Run the function
         result = common.extract_label_value(data, label)
 
         # Check the result
-        with self.subTest("Empty Input"):
-            self.assertEqual(result, "")
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 class TestExtractRowCell(unittest.TestCase):
@@ -306,8 +349,8 @@ class TestExtractRowCell(unittest.TestCase):
         # Run the function
         result = common.extract_row_cell(row, header)
         # Check the result
-        with self.subTest("Exact Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_normalized_header(self):
         """
@@ -323,8 +366,8 @@ class TestExtractRowCell(unittest.TestCase):
         # Run the function
         result = common.extract_row_cell(row, header)
         # Check the result
-        with self.subTest("Normalized Header"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_missing_column(self):
         """
@@ -339,8 +382,8 @@ class TestExtractRowCell(unittest.TestCase):
         # Run the function
         result = common.extract_row_cell(row, header)
         # Check the result
-        with self.subTest("Missing Header"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_none_value(self):
         """
@@ -355,8 +398,8 @@ class TestExtractRowCell(unittest.TestCase):
         # Run the function
         result = common.extract_row_cell(row, header)
         # Check the result
-        with self.subTest("None Cell Value"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 class TestExtractTable(unittest.TestCase):
@@ -390,8 +433,14 @@ class TestExtractTable(unittest.TestCase):
         result = common.extract_table(df, labels)
 
         # Check the result
-        with self.subTest("Successful Extraction"):
-            assert_frame_equal(result, expected)
+        for result_key, expected_key in zip(result, expected):
+            with self.subTest(Out=result_key, Exp=expected_key):
+                self.assertEqual(result_key, expected_key)
+            result_row = result[result_key]
+            expected_row = expected[expected_key]
+            for result_value, expected_value in zip(result_row, expected_row):
+                with self.subTest(Out=result_value, Exp=expected_value):
+                    self.assertEqual(result_value, expected_value)
 
     def test_table_header_not_found_raises(self):
         """
@@ -405,10 +454,18 @@ class TestExtractTable(unittest.TestCase):
         df = pd.DataFrame(data)
         labels = ["qty", "part", "value"]
 
-        # Run the function and expect ValueError
-        with self.subTest("No Header Found"):
-            with self.assertRaises(ValueError):
-                common.extract_table(df, labels)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_table(df, labels)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
     def test_extracted_table_is_empty_raises(self):
         """
@@ -422,10 +479,18 @@ class TestExtractTable(unittest.TestCase):
         df = pd.DataFrame(data)
         labels = ["qty", "part", "value"]
 
-        # Run the function and expect ValueError
-        with self.subTest("Empty Table"):
-            with self.assertRaises(ValueError):
-                common.extract_table(df, labels)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_table(df, labels)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
     def test_empty_dataframe_raises(self):
         """
@@ -435,10 +500,18 @@ class TestExtractTable(unittest.TestCase):
         df = pd.DataFrame()
         labels = ["qty", "part", "value"]
 
-        # Run the function and expect ValueError
-        with self.subTest("Empty DataFrame"):
-            with self.assertRaises(ValueError):
-                common.extract_table(df, labels)
+        expected = ValueError.__name__
+
+        # Run the function and capture the exception type
+        try:
+            common.extract_table(df, labels)
+            result = ""  # No exception raised
+        except ValueError as e:
+            result = type(e).__name__
+
+        # Subtest for exception name match
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
 
 class TestFindRowWithMostLabelMatches(unittest.TestCase):
@@ -466,8 +539,8 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         # Run the functions
         result = common.find_row_with_most_label_matches(df, labels)
         # Check the result
-        with self.subTest("Perfect match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_partial_match(self):
         """
@@ -485,8 +558,8 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         # Run the functions
         result = common.find_row_with_most_label_matches(df, labels)
         # Check the result
-        with self.subTest("Partial match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_no_match(self):
         """
@@ -504,8 +577,8 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         # Run the functions
         result = common.find_row_with_most_label_matches(df, labels)
         # Check the result
-        with self.subTest("No match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 class TestFlattenDataFrame(unittest.TestCase):
@@ -530,8 +603,9 @@ class TestFlattenDataFrame(unittest.TestCase):
         result = common.flatten_dataframe(df)
 
         # Check that output matches expected flat list
-        with self.subTest("Simple DataFrame"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_nan_handling(self):
         """
@@ -550,8 +624,9 @@ class TestFlattenDataFrame(unittest.TestCase):
         result = common.flatten_dataframe(df)
 
         # Validate flattened list has NaNs replaced properly and data order preserved
-        with self.subTest("NaN Replacement"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_mixed_types(self):
         """
@@ -571,8 +646,9 @@ class TestFlattenDataFrame(unittest.TestCase):
         result = common.flatten_dataframe(df)
 
         # Validate mixed data types are preserved and flattened correctly
-        with self.subTest("Mixed Data Types"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_empty_dataframe(self):
         """
@@ -588,8 +664,9 @@ class TestFlattenDataFrame(unittest.TestCase):
         result = common.flatten_dataframe(df)
 
         # Ensure the result is an empty list
-        with self.subTest("Empty DataFrame"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_dataframe_with_index(self):
         """
@@ -608,8 +685,9 @@ class TestFlattenDataFrame(unittest.TestCase):
         result = common.flatten_dataframe(df)
 
         # Confirm only headers and values are included, not index labels
-        with self.subTest("Index Ignored"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
 
 class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
@@ -637,8 +715,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("All labels matched in best row"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_some_labels_unmatched_in_best_row(self):
         """
@@ -655,8 +734,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Some labels unmatched in best row"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_no_labels_matched(self):
         """
@@ -673,8 +753,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("No labels matched at all"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_whitespace_and_case_insensitive_match(self):
         """
@@ -689,8 +770,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Match with normalization"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_empty_dataframe(self):
         """
@@ -703,8 +785,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Empty DataFrame"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_empty_labels(self):
         """
@@ -719,8 +802,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Empty label list"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_nan_and_none_cells(self):
         """
@@ -737,8 +821,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Nan and None cells"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_labels_with_whitespace_and_control_chars(self):
         """
@@ -754,8 +839,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
         # Check the result
-        with self.subTest("Labels with whitespaces and control characters"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
     def test_large_dataframe_no_crash(self):
         """
@@ -770,8 +856,9 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
         expected = labels
         # Run the functions
         result = common.find_unmatched_labels_in_best_row(df, labels)
-        with self.subTest("Large dataframe no crash"):
-            self.assertEqual(result, expected)
+        for result_value, expected_value in zip(result, expected):
+            with self.subTest(Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
 class TestHasAllLabelsInARow(unittest.TestCase):
     """
@@ -798,8 +885,8 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         result = common.has_all_labels_in_a_row("TestSheet", df, required_labels)
 
         # Check the result
-        with self.subTest("All Labels Present"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_missing_one_label(self):
         """
@@ -819,8 +906,8 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         result = common.has_all_labels_in_a_row("PartialSheet", df, required_labels)
 
         # Check the result
-        with self.subTest("Missing One Label"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_labels_split_across_rows(self):
         """
@@ -841,8 +928,8 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         result = common.has_all_labels_in_a_row("SplitSheet", df, required_labels)
 
         # Check the result
-        with self.subTest("Split Across Rows"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_empty_dataframe(self):
         """
@@ -859,8 +946,8 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         result = common.has_all_labels_in_a_row("EmptySheet", df, required_labels)
 
         # Check the result
-        with self.subTest("Empty DataFrame"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_empty_required_labels(self):
         """
@@ -879,8 +966,8 @@ class TestHasAllLabelsInARow(unittest.TestCase):
         result = common.has_all_labels_in_a_row("NoLabels", df, required_labels)
 
         # Check the result
-        with self.subTest("Empty Required Labels"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 class TestNormalizeLabelText(unittest.TestCase):
@@ -899,8 +986,8 @@ class TestNormalizeLabelText(unittest.TestCase):
         # Run the function
         result = common._normalize_label_text(input_text)
         # Check the result
-        with self.subTest("Whitespace and Case"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_clean_input(self):
         """
@@ -912,8 +999,8 @@ class TestNormalizeLabelText(unittest.TestCase):
         # Run the function
         result = common._normalize_label_text(input_text)
         # Check the result
-        with self.subTest("Clean Input"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 class TestSearchLabelIndex(unittest.TestCase):
@@ -933,8 +1020,8 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Run the function
         result = common._search_label_index(data, label)
         # Check the result
-        with self.subTest("Exact Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_substring_match(self):
         """
@@ -947,8 +1034,8 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Run the function
         result = common._search_label_index(data, label)
         # Check the result
-        with self.subTest("Substring Match"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_whitespace_and_case_insensitivity(self):
         """
@@ -961,8 +1048,8 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Run the function
         result = common._search_label_index(data, label)
         # Check the result
-        with self.subTest("Whitespace And Case Insensitive"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_label_not_found(self):
         """
@@ -975,8 +1062,8 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Run the function
         result = common._search_label_index(data, label)
         # Check the result
-        with self.subTest("Not Found"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
     def test_empty_data_list(self):
         """
@@ -989,8 +1076,8 @@ class TestSearchLabelIndex(unittest.TestCase):
         # Run the function
         result = common._search_label_index(data, label)
 
-        with self.subTest("Empty List"):
-            self.assertEqual(result, expected)
+        with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
