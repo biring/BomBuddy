@@ -16,7 +16,7 @@ class TestIsV3Board(unittest.TestCase):
         Should return False when none of the required headers are present.
         """
         df = pd.DataFrame([["Foo", "Bar", "Baz"], ["1", "2", "3"]])
-        result = v3_parser._is_v3_board("Sheet3", df)
+        result = v3_parser._is_v3_board_sheet("Sheet3", df)
         self.assertFalse(result)
 
     def test_false_when_some_identifiers_missing(self):
@@ -28,7 +28,7 @@ class TestIsV3Board(unittest.TestCase):
         data = [partial_headers] + [[None] * len(partial_headers)]
         df = pd.DataFrame(data)
 
-        result = v3_parser._is_v3_board("Sheet2", df)
+        result = v3_parser._is_v3_board_sheet("Sheet2", df)
         self.assertFalse(result)
 
     def test_true_when_all_identifiers_present(self):
@@ -40,7 +40,7 @@ class TestIsV3Board(unittest.TestCase):
         data = [headers] + [[None] * len(headers)]
         df = pd.DataFrame(data)
 
-        result = v3_parser._is_v3_board("Sheet1", df)
+        result = v3_parser._is_v3_board_sheet("Sheet1", df)
         self.assertTrue(result)
 
 
@@ -255,6 +255,7 @@ class TestParseBoardTableRow(unittest.TestCase):
             result = v3_parser._parse_board_table_row(row)
             self.assertEqual(result, expected)
 
+
 class TestParseBoard(unittest.TestCase):
 
     def test_of_bom_with_four_items(self):
@@ -344,8 +345,9 @@ class TestParseBoard(unittest.TestCase):
             ]
         )
 
-        result = v3_parser._parse_board(df)
+        result = v3_parser._parse_board_sheet(df)
         self.assertEqual(result, expected)
+
 
 class TestParseBom(unittest.TestCase):
 

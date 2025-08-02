@@ -430,7 +430,7 @@ class TestExtractTable(unittest.TestCase):
         )
 
         # Run the function
-        result = common.extract_table(df, labels)
+        result = common.extract_table_block(df, labels)
 
         # Check the result
         for result_key, expected_key in zip(result, expected):
@@ -458,7 +458,7 @@ class TestExtractTable(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_table(df, labels)
+            common.extract_table_block(df, labels)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__
@@ -483,7 +483,7 @@ class TestExtractTable(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_table(df, labels)
+            common.extract_table_block(df, labels)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__
@@ -504,7 +504,7 @@ class TestExtractTable(unittest.TestCase):
 
         # Run the function and capture the exception type
         try:
-            common.extract_table(df, labels)
+            common.extract_table_block(df, labels)
             result = ""  # No exception raised
         except ValueError as e:
             result = type(e).__name__

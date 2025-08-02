@@ -204,7 +204,7 @@ def extract_cell_value_by_fuzzy_header(row: pd.Series, identifier: str) -> str:
     return DEFAULT_EMPTY_CELL_VALUE
 
 
-def extract_table(df: pd.DataFrame, identifiers: list[str]) -> pd.DataFrame:
+def extract_table_block(df: pd.DataFrame, identifiers: list[str]) -> pd.DataFrame:
     """
     Extracts the BOM component table from a DataFrame using identifier labels to locate the header row.
 
