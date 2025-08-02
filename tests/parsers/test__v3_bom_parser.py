@@ -1,115 +1,210 @@
+"""
+Unit tests for Version 3 BOM parser functions.
+
+This module provides comprehensive test coverage for the `src.parsers._v3_bom_parser`
+module, which is responsible for parsing Version 3 Excel-based Bill of Materials (BOM)
+files into structured data models (`Bom`, `Board`, `Header`, `Item`).
+
+Main test capabilities:
+ - Detect whether a sheet conforms to the V3 BOM format
+ - Parse board-level metadata (header block)
+ - Parse item-level component tables with messy or normalized headers
+ - Verify full BOM file parsing across multi-board Excel files
+
+Example Usage:
+    python -m unittest tests.test_v3_bom_parser
+
+Dependencies:
+ - Python >= 3.9
+ - Standard Library: os, unittest
+ - External: pandas, openpyxl (via pandas.read_excel)
+
+Notes:
+ - Relies on test Excel files in `test_data/` for integration-style validation.
+ - Tests use direct access to `_`-prefixed internal parsing functions (acceptable in unit scope).
+ - Designed to ensure robustness against format inconsistencies like whitespace, newline/tab characters in headers.
+
+License:
+ - Internal Use Only
+"""
+
 import os
 import unittest
 import pandas as pd
 
-from src.parsers.interfaces import *
 from src.models.interfaces import *
 
 # noinspection PyProtectedMember
 import src.parsers._v3_bom_parser as v3_parser
 
 
-class TestIsV3Board(unittest.TestCase):
+class TestIsV3BoardSheet(unittest.TestCase):
+    """
+    Unit tests for the `_is_v3_board_sheet` function in the v3_parser module.
 
-    def test_false_when_no_identifiers_present(self):
-        """
-        Should return False when none of the required headers are present.
-        """
-        df = pd.DataFrame([["Foo", "Bar", "Baz"], ["1", "2", "3"]])
-        result = v3_parser._is_v3_board_sheet("Sheet3", df)
-        self.assertFalse(result)
+    This test suite verifies whether a given DataFrame corresponds to a valid
+    V3 board sheet by checking for the presence of required header identifiers.
+    """
 
-    def test_false_when_some_identifiers_missing(self):
+    def test_no_identifiers_present(self):
         """
-        Should return False when only a subset of BOARD_TABLE_IDENTIFIERS are present.
+        Should return False when none of the identifiers are present.
         """
-        # Only include a partial set of required headers
-        partial_headers = REQUIRED_V3_BOARD_TABLE_IDENTIFIERS[:-1] + ["Other"]
-        data = [partial_headers] + [[None] * len(partial_headers)]
-        df = pd.DataFrame(data)
+        # ARRANGE
+        # Prepare a DataFrame that mimics a non-V3 sheet (no matching headers)
+        test_df = pd.DataFrame([["Foo", "Bar", "Baz"], ["1", "2", "3"]])
+        expected = False
 
-        result = v3_parser._is_v3_board_sheet("Sheet2", df)
-        self.assertFalse(result)
+        # ACT
+        # Run the detection function
+        result = v3_parser._is_v3_board_sheet("Sheet3", test_df)
 
-    def test_true_when_all_identifiers_present(self):
-        """
-        Should return True when all BOARD_TABLE_IDENTIFIERS are present in a row.
-        """
-        # Construct a DataFrame with all required headers in the first row
-        headers = REQUIRED_V3_BOARD_TABLE_IDENTIFIERS + ["Extra Column"]
-        data = [headers] + [[None] * len(headers)]
-        df = pd.DataFrame(data)
+        # ASSERT
+        # Verify the result is False when no required headers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
-        result = v3_parser._is_v3_board_sheet("Sheet1", df)
-        self.assertTrue(result)
+    def test_some_identifiers_missing(self):
+        """
+        Should return False when only some identifiers are present.
+        """
+        # ARRANGE
+        # Prepare a DataFrame with only some of the required identifiers (incomplete)
+        partial_identifiers = REQUIRED_V3_BOARD_TABLE_IDENTIFIERS[:-1] + ["Other"]
+        sheet_data = [partial_identifiers] + [[None] * len(partial_identifiers)]
+        test_df = pd.DataFrame(sheet_data)
+        expected = False
+
+        # ACT
+        # Run the detection function
+        result = v3_parser._is_v3_board_sheet("Sheet2", test_df)
+
+        # ASSERT
+        # Verify the result is False when only some identifiers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_all_identifiers_present(self):
+        """
+        Should return True when all identifiers are present.
+        """
+        # ARRANGE
+        # Prepare a DataFrame that includes all required identifiers plus extras
+        all_identifiers = REQUIRED_V3_BOARD_TABLE_IDENTIFIERS + ["Extra Column"]
+        sheet_data = [all_identifiers] + [[None] * len(all_identifiers)]
+        test_df = pd.DataFrame(sheet_data)
+        expected = True
+
+        # ACT
+        # Run the detection function
+        result = v3_parser._is_v3_board_sheet("Sheet1", test_df)
+
+        # ASSERT
+        # Verify the result is True when all required identifiers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
 
 class TestIsV3Bom(unittest.TestCase):
+    """
+    Unit tests for the `is_v3_bom` function in the v3_parser module.
 
-    def test_false_when_no_identifiers_present(self):
-        # Construct path relative to this test file
+    This suite verifies whether a workbook (dict of DataFrames) conforms to
+    the Version 3 BOM template by verifying required sheet identifiers.
+    """
+
+    def test_no_identifiers_present(self):
+        """
+        Should return False when none of the identifiers are present.
+        """
+        # ARRANGE
+        # Load Excel file that does not match V3 BOM format
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsNotBomTemplate.xlsx')
-
-        # Read excell file as pandas data frame
+        # Read Excel file as pandas data frame
         df = pd.read_excel(file_path, sheet_name=None)
+        self.assertTrue(df)  # Sanity check: workbook is not empty
+        sheets = list(df.items())
+        expected = False
 
-        # Check read is successful
-        self.assertTrue(df)  # Checks that the dict is not empty
+        # ACT
+        # Run the detection function
+        result = v3_parser.is_v3_bom(sheets)
 
-        # Run unit test
-        with self.subTest("False"):
-            sheets = list(df.items())
-            self.assertFalse(is_v3_bom(sheets), "Failed to detect NOT a BOM template")
+        # ASSERT
+        # Verify the result is False when no identifiers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
-    def test_false_when_some_identifiers_missing(self):
-        # Construct path relative to this test file
+    def test_some_identifiers_missing(self):
+        """
+        Should return False when some of the identifiers are present.
+        """
+        # ARRANGE
+        # Load Excel file with partial identifiers (e.g., V2 BOM format)
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsVersion2BomTemplate.xlsx')
-
-        # Read excell file as pandas data frame
+        # Read Excel file as pandas data frame
         df = pd.read_excel(file_path, sheet_name=None)
+        self.assertTrue(df)  # Sanity check: workbook is not empty
+        sheets = list(df.items())
+        expected = False
 
-        # Check read is successful
-        self.assertTrue(df)  # Checks that the dict is not empty
+        # ACT
+        # Run the detection function
+        result = v3_parser.is_v3_bom(sheets)
 
-        # Run unit test
-        with self.subTest("False"):
-            sheets = list(df.items())
-            self.assertFalse(is_v3_bom(sheets), "Failed to detect version 2 BOM template")
+        # ASSERT
+        # Verify the result is False when some identifiers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
-    def test_true_when_all_identifiers_present(self):
-        # Construct path relative to this test file
+    def test_all_identifiers_present(self):
+        """
+        Should return True when all identifiers are present.
+        """
+        # ARRANGE
+        # Load Excel file that includes all required V3 BOM identifiers
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsVersion3BomTemplate.xlsx')
-
-        # Read excell file as pandas data frame
+        # Read Excel file as pandas data frame
         df = pd.read_excel(file_path, sheet_name=None)
-
-        # Check read is successful
         self.assertTrue(df)  # Checks that the dict is not empty
+        sheets = list(df.items())
+        expected = True
 
-        # Run unit test
-        with self.subTest("True"):
-            sheets = list(df.items())
-            self.assertTrue(is_v3_bom(sheets), "Failed to detect version 3 BOM template")
+        # ACT
+        # Run the detection function
+        result = v3_parser.is_v3_bom(sheets)
+
+        # ASSERT
+        # Verify the result is True when some identifiers are present
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
 
 class TestParseBoardHeader(unittest.TestCase):
+    """
+    Unit test for the `_parse_board_header` function in the v3_parser module.
 
-    def test_true_when_full_header_match(self):
+    This test verifies whether the parser correctly extracts all board-level
+    metadata fields from the top portion of a Version 3 BOM sheet.
+    """
+
+    def test_full_header_match(self):
         """
-        Test parsing board-level metadata from a real V3 BOM header section.
+        Should parse all board-level metadata fields from a V3 BOM header section.
         """
-        # Load Excel and extract the sheet
+        # ARRANGE
+        # Load test Excel sheet containing a known V3 BOM header
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "IsVersion3BomTemplate.xlsx")
-        df = pd.read_excel(file_path, dtype=str, header=None)
+        full_sheet_df = pd.read_excel(file_path, dtype=str, header=None)
 
-        # Extract the top 10 rows as the header block. Adjust as needed.
-        header_df = df.iloc[:10]
+        # Use the top N rows as the header block for parsing. Adjust as needed.
+        header_block_df = full_sheet_df.iloc[:10]
 
-        # Expected result based on actual cell contents in those rows
+        # Expected Header instance from test data
         expected = Header(
             model_no="FD100US",
             board_name="POWER PCBA",
@@ -121,147 +216,34 @@ class TestParseBoardHeader(unittest.TestCase):
             total_cost="141.98"
         )
 
-        # Parse and assert
-        result = v3_parser._parse_board_header(header_df)
-        self.assertEqual(result, expected)
+        # ACT
+        # Run header parser on the extracted top rows
+        result = v3_parser._parse_board_header(header_block_df)
+
+        # ASSERT
+        self.assertIsNotNone(result, "Parser returned None")
+        # Assert: All fields match
+        for field_name in expected.__dict__:
+            expected_value = getattr(expected, field_name)
+            result_value = getattr(result, field_name)
+            with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
 
-class TestParseBoardTable(unittest.TestCase):
+class TestParseBoardSheet(unittest.TestCase):
+    """
+    Unit test for the `_parse_board_sheet` function in the v3_parser module.
 
-    def test_true_with_two_rows_and_messy_header(self):
-        """
-        Test parsing a BOM table with multiple rows into Item instances.
-        """
-        # Simulated BOM table with two rows and messy headers
-        table_df = pd.DataFrame([
-            {
-                " Item ": 1,
-                "Component\n": "Relay",
-                "Device Package": "DIP",
-                " Description ": "12VDC Relay",
-                "Unit": "PCS",
-                "Classification ": "A",
-                "Manufacturer": "PANASONIC",
-                "Manufacturer P/N": "SRG-S-112DM-F",
-                "UL/VDE \tNumber": "VDE 40037165",
-                "Validated at": "EB0",
-                "Qty": 1,
-                "Designator": "RY1",
-                "U/P \n(RMB W/ VAT)": "1.000",
-                "Sub-Total \n(RMB W/ VAT)": "1.000"
-            },
-            {
-                " Item ": 2,
-                "Component\n": "Capacitor",
-                "Device Package": "0805",
-                " Description ": "10uF 25V X7R",
-                "Unit": "PCS",
-                "Classification ": "B",
-                "Manufacturer": "TDK",
-                "Manufacturer P/N": "C2012X7R1E106K",
-                "UL/VDE \tNumber": "",
-                "Validated at": "EB0",
-                "Qty": 2,
-                "Designator": "C1,C2",
-                "U/P \n(RMB W/ VAT)": "0.100",
-                "Sub-Total \n(RMB W/ VAT)": "0.200"
-            }
-        ])
-
-        expected = [
-            Item(
-                item="1",
-                component_type="Relay",
-                device_package="DIP",
-                description="12VDC Relay",
-                unit="PCS",
-                classification="A",
-                manufacturer="PANASONIC",
-                mfg_part_number="SRG-S-112DM-F",
-                ul_vde_number="VDE 40037165",
-                validated_at="EB0",
-                qty="1",
-                designator="RY1",
-                unit_price="1.000",
-                sub_total="1.000"
-            ),
-            Item(
-                item="2",
-                component_type="Capacitor",
-                device_package="0805",
-                description="10uF 25V X7R",
-                unit="PCS",
-                classification="B",
-                manufacturer="TDK",
-                mfg_part_number="C2012X7R1E106K",
-                ul_vde_number="",
-                validated_at="EB0",
-                qty="2",
-                designator="C1,C2",
-                unit_price="0.100",
-                sub_total="0.200"
-            )
-        ]
-
-        with self.subTest("Basic"):
-            result = v3_parser._parse_board_table(table_df)
-            self.assertEqual(result, expected)
-
-
-class TestParseBoardTableRow(unittest.TestCase):
-
-    def test_true_with_messy_header(self):
-        """
-        Test parsing a BOM row with varied header formatting into an Item instance.
-        """
-        # Simulated messy BOM row from Excel
-        row = pd.Series({
-            " Item ": 1,
-            "Component\n": "Relay",
-            "Device Package": "DIP",
-            " Description ": "12VDC Relay",
-            "Unit": "PCS",
-            "Classification ": "A",
-            "Manufacturer": "PANASONIC",
-            "Manufacturer P/N": "SRG-S-112DM-F",
-            "UL/VDE \tNumber": "VDE 40037165",
-            "Validated at": "EB0",
-            "Qty": 1,
-            "Designator": "RY1",
-            "U/P \n(RMB W/ VAT)": "1.000",
-            "Sub-Total \n(RMB W/ VAT)": "1.000"
-        })
-
-        # Expected output dataclass
-        expected = Item(
-            item="1",
-            component_type="Relay",
-            device_package="DIP",
-            description="12VDC Relay",
-            unit="PCS",
-            classification="A",
-            manufacturer="PANASONIC",
-            mfg_part_number="SRG-S-112DM-F",
-            ul_vde_number="VDE 40037165",
-            validated_at="EB0",
-            qty="1",
-            designator="RY1",
-            unit_price="1.000",
-            sub_total="1.000"
-        )
-
-        # Execute and assert
-        with self.subTest("Basic"):
-            result = v3_parser._parse_board_table_row(row)
-            self.assertEqual(result, expected)
-
-
-class TestParseBoard(unittest.TestCase):
+    This test verifies that a complete Version 3 BOM sheet can be parsed into a
+    structured `Board` object with valid `Header` and multiple `Item` entries.
+    """
 
     def test_of_bom_with_four_items(self):
         """
-        Test parsing a version 3 BOM with 4 items.
+        Should parse a full Version 3 BOM containing 4 item entries and a valid header.
         """
+        # ARRANGE
+        # Load BOM sheet from test Excel file
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "Version3BomSample.xlsx")
         df = pd.read_excel(file_path, dtype=str, header=None)
@@ -345,21 +327,208 @@ class TestParseBoard(unittest.TestCase):
             ]
         )
 
+        # ACT
+        # Parse the BOM sheet
         result = v3_parser._parse_board_sheet(df)
-        self.assertEqual(result, expected)
+
+        # ASSERT
+        # Verify all header fields match expected values
+        expected_header = expected.header
+        result_header = result.header
+        for field_name in expected_header.__dict__:
+            expected_value = getattr(expected_header, field_name)
+            result_value = getattr(result_header, field_name)
+            with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
+        # Verify each item field matches expected values
+        expected_items = expected.items
+        result_items = result.items
+        for expected_item, result_item in zip(expected_items, result_items):
+            for field_name in expected_item.__dict__:
+                expected_value = getattr(expected_item, field_name)
+                result_value = getattr(result_item, field_name)
+                with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
+                    self.assertEqual(result_value, expected_value)
+
+
+class TestParseBoardTable(unittest.TestCase):
+    """
+    Unit tests for the `_parse_board_table` function in the v3_parser module.
+
+    This test verifies whether the function can correctly extract a list of Item
+    instances from a BOM table with messy column headers and multiple rows.
+    """
+
+    def test_with_two_rows_and_messy_header(self):
+        """
+        Should parse a BOM table with two rows and messy headers into Item instances.
+        """
+        # ARRANGE
+        # Simulated BOM table with inconsistent spacing, newline, and tab characters in headers
+        table_df = pd.DataFrame([
+            {
+                " Item ": 1,
+                "Component\n": "Relay",
+                "Device Package": "DIP",
+                " Description ": "12VDC Relay",
+                "Unit": "PCS",
+                "Classification ": "A",
+                "Manufacturer": "PANASONIC",
+                "Manufacturer P/N": "SRG-S-112DM-F",
+                "UL/VDE \tNumber": "VDE 40037165",
+                "Validated at": "EB0",
+                "Qty": 1,
+                "Designator": "RY1",
+                "U/P \n(RMB W/ VAT)": "1.000",
+                "Sub-Total \n(RMB W/ VAT)": "1.000"
+            },
+            {
+                " Item ": 2,
+                "Component\n": "Capacitor",
+                "Device Package": "0805",
+                " Description ": "10uF 25V X7R",
+                "Unit": "PCS",
+                "Classification ": "B",
+                "Manufacturer": "TDK",
+                "Manufacturer P/N": "C2012X7R1E106K",
+                "UL/VDE \tNumber": "",
+                "Validated at": "EB0",
+                "Qty": 2,
+                "Designator": "C1,C2",
+                "U/P \n(RMB W/ VAT)": "0.100",
+                "Sub-Total \n(RMB W/ VAT)": "0.200"
+            }
+        ])
+
+        expected = [
+            Item(
+                item="1",
+                component_type="Relay",
+                device_package="DIP",
+                description="12VDC Relay",
+                unit="PCS",
+                classification="A",
+                manufacturer="PANASONIC",
+                mfg_part_number="SRG-S-112DM-F",
+                ul_vde_number="VDE 40037165",
+                validated_at="EB0",
+                qty="1",
+                designator="RY1",
+                unit_price="1.000",
+                sub_total="1.000"
+            ),
+            Item(
+                item="2",
+                component_type="Capacitor",
+                device_package="0805",
+                description="10uF 25V X7R",
+                unit="PCS",
+                classification="B",
+                manufacturer="TDK",
+                mfg_part_number="C2012X7R1E106K",
+                ul_vde_number="",
+                validated_at="EB0",
+                qty="2",
+                designator="C1,C2",
+                unit_price="0.100",
+                sub_total="0.200"
+            )
+        ]
+
+        # ACT
+        # Run the parser
+        result = v3_parser._parse_board_table(table_df)
+
+        # ASSERT
+        for result_item, expected_item in zip(result, expected):
+            # All fields match
+            for field_name in expected_item.__dict__:
+                expected_value = getattr(expected_item, field_name)
+                result_value = getattr(result_item, field_name)
+                with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
+                    self.assertEqual(result_value, expected_value)
+
+
+class TestParseBoardTableRow(unittest.TestCase):
+    """
+    Unit test for the `_parse_board_table_row` function in the v3_parser module.
+
+    This test ensures a single BOM row with messy or irregular header formatting
+    is correctly parsed into an `Item` instance.
+    """
+
+    def test_with_messy_header(self):
+        """
+        Should parse a BOM row with inconsistent column formatting into an Item instance.
+        """
+        # ARRANGE
+        # Simulated single BOM row with headers containing whitespace, newline, and tab characters
+        row = pd.Series({
+            " Item ": 1,
+            "Component\n": "Relay",
+            "Device Package": "DIP",
+            " Description ": "12VDC Relay",
+            "Unit": "PCS",
+            "Classification ": "A",
+            "Manufacturer": "PANASONIC",
+            "Manufacturer P/N": "SRG-S-112DM-F",
+            "UL/VDE \tNumber": "VDE 40037165",
+            "Validated at": "EB0",
+            "Qty": 1,
+            "Designator": "RY1",
+            "U/P \n(RMB W/ VAT)": "1.000",
+            "Sub-Total \n(RMB W/ VAT)": "1.000"
+        })
+
+        # Expected result from cleaned header and values
+        expected = Item(
+            item="1",
+            component_type="Relay",
+            device_package="DIP",
+            description="12VDC Relay",
+            unit="PCS",
+            classification="A",
+            manufacturer="PANASONIC",
+            mfg_part_number="SRG-S-112DM-F",
+            ul_vde_number="VDE 40037165",
+            validated_at="EB0",
+            qty="1",
+            designator="RY1",
+            unit_price="1.000",
+            sub_total="1.000"
+        )
+
+        # ACT
+        # Run the parser
+        result = v3_parser._parse_board_table_row(row)
+
+        # ASSERT
+        # All Item field must match
+        for field_name in expected.__dict__:
+            expected_value = getattr(expected, field_name)
+            result_value = getattr(result, field_name)
+            with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
+                self.assertEqual(result_value, expected_value)
 
 
 class TestParseBom(unittest.TestCase):
+    """
+    Unit test for the `parse_v3_bom` function in the v3_parser module.
+
+    This test verifies that a multi-board Version 3 BOM Excel file is correctly parsed
+    into a Bom object containing multiple Board instances with valid Headers and Items.
+    """
 
     def test_parse_multiple_boards_from_version3_excel(self):
         """
-        Test parsing version 3 BOM with two valid boms.
+        Should parse a Version 3 BOM Excel file containing two separate board BOMs.
         """
+        # ARRANGE
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "Version3BomMultiBoard.xlsx")
         xls = pd.ExcelFile(file_path)
 
-        # Convert all sheets to (sheet name, dataframe) tuples
+        # Parse all sheets into (sheet name, DataFrame) pairs
         sheets = [(name, xls.parse(name, dtype=str, header=None)) for name in xls.sheet_names]
 
         expected = Bom(
@@ -444,11 +613,44 @@ class TestParseBom(unittest.TestCase):
             ]
         )
 
-        # Parse BOM
-        bom = v3_parser.parse_v3_bom(sheets)
-
+        # ACT
+        # Run the parser
         result = v3_parser.parse_v3_bom(sheets)
-        self.assertEqual(result, expected)
+
+        # ASSERT
+        # Verify file name
+        expected_file_name = expected.file_name
+        result_file_name = result.file_name
+        with self.subTest("File Name", Out=result_file_name, Exp=expected_file_name):
+            self.assertEqual(result_file_name, expected_file_name)
+
+        # Verify number of boards
+        expected_boards = len(expected.boards)
+        result_boards = len(result.boards)
+        with self.subTest("Board Count", Out=expected_boards, Exp=expected_boards):
+            self.assertEqual(result_boards, expected_boards)
+
+        # Verify boards
+        expected_boards = expected.boards
+        result_boards = result.boards
+        for expected, result in zip(expected_boards, result_boards):
+            # Verify board header fields
+            expected_header = expected.header
+            result_header = result.header
+            for field_name in expected_header.__dict__:
+                expected_value = getattr(expected_header, field_name)
+                result_value = getattr(result_header, field_name)
+                with self.subTest("Header", Field=field_name, Out=result_value, Exp=expected_value):
+                    self.assertEqual(result_value, expected_value)
+            # Verify board item fields
+            expected_items = expected.items
+            result_items = result.items
+            for expected_item, result_item in zip(expected_items, result_items):
+                for field_name in expected_item.__dict__:
+                    expected_value = getattr(expected_item, field_name)
+                    result_value = getattr(result_item, field_name)
+                    with self.subTest("Item", Field=field_name, Out=result_value, Exp=expected_value):
+                        self.assertEqual(result_value, expected_value)
 
 
 if __name__ == "__main__":

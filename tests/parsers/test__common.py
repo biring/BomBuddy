@@ -135,7 +135,7 @@ class TestExtractHeader(unittest.TestCase):
         data = [
             ["Rev:", "A"],
             [],
-            ["Build:", "EB5",""],
+            ["Build:", "EB5", ""],
             ["Qty", "Part", "Value"],
             ["1", "R1", "10k"]
         ]
@@ -153,7 +153,6 @@ class TestExtractHeader(unittest.TestCase):
             for result_value, expected_value in zip(result_row, expected_row):
                 with self.subTest(Out=result_value, Exp=expected_value):
                     self.assertEqual(result_value, expected_value)
-
 
     def test_empty_header_block_raises(self):
         """
@@ -226,7 +225,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_successful_skip_match(self):
         """
@@ -242,7 +241,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_successful_with_empty_data(self):
         """
@@ -258,7 +257,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_normalized_match(self):
         """
@@ -274,7 +273,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_label_not_found_returns_empty(self):
         """
@@ -290,7 +289,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_label_found_but_no_value_raises(self):
         """
@@ -327,7 +326,7 @@ class TestExtractLabelValue(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 class TestExtractRowCell(unittest.TestCase):
@@ -350,7 +349,7 @@ class TestExtractRowCell(unittest.TestCase):
         result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_normalized_header(self):
         """
@@ -367,7 +366,7 @@ class TestExtractRowCell(unittest.TestCase):
         result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_missing_column(self):
         """
@@ -383,7 +382,7 @@ class TestExtractRowCell(unittest.TestCase):
         result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_none_value(self):
         """
@@ -399,7 +398,7 @@ class TestExtractRowCell(unittest.TestCase):
         result = common.extract_cell_value_by_fuzzy_header(row, header)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 class TestExtractTable(unittest.TestCase):
@@ -540,7 +539,7 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_partial_match(self):
         """
@@ -559,7 +558,7 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_no_match(self):
         """
@@ -578,7 +577,7 @@ class TestFindRowWithMostLabelMatches(unittest.TestCase):
         result = common.find_row_with_most_identifier_matches(df, labels)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 class TestFlattenDataFrame(unittest.TestCase):
@@ -860,6 +859,7 @@ class TestGetUnmatchedLabelsFromBestRow(unittest.TestCase):
             with self.subTest(Out=result_value, Exp=expected_value):
                 self.assertEqual(result_value, expected_value)
 
+
 class TestHasAllLabelsInARow(unittest.TestCase):
     """
     Unit tests for `has_all_labels_in_a_row`, validating detection of all required labels
@@ -886,7 +886,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_missing_one_label(self):
         """
@@ -907,7 +907,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_labels_split_across_rows(self):
         """
@@ -929,7 +929,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_empty_dataframe(self):
         """
@@ -947,7 +947,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_empty_required_labels(self):
         """
@@ -967,7 +967,7 @@ class TestHasAllLabelsInARow(unittest.TestCase):
 
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 class TestNormalizeLabelText(unittest.TestCase):
@@ -987,7 +987,7 @@ class TestNormalizeLabelText(unittest.TestCase):
         result = common._normalize_identifier(input_text)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_clean_input(self):
         """
@@ -1000,7 +1000,7 @@ class TestNormalizeLabelText(unittest.TestCase):
         result = common._normalize_identifier(input_text)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 class TestSearchLabelIndex(unittest.TestCase):
@@ -1021,7 +1021,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_substring_match(self):
         """
@@ -1035,7 +1035,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_whitespace_and_case_insensitivity(self):
         """
@@ -1049,7 +1049,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_label_not_found(self):
         """
@@ -1063,7 +1063,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._find_identifier_index(data, label)
         # Check the result
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
     def test_empty_data_list(self):
         """
@@ -1077,7 +1077,7 @@ class TestSearchLabelIndex(unittest.TestCase):
         result = common._find_identifier_index(data, label)
 
         with self.subTest(Out=result, Exp=expected):
-                self.assertEqual(result, expected)
+            self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
