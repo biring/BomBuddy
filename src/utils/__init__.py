@@ -22,11 +22,19 @@ Note:
 from .text_sanitizer import (
     normalize_spaces,
     normalize_to_string,
-    remove_all_whitespace
+    remove_all_whitespace,
+)
+from .path_helpers import (
+    join,
+    normalize,
+    project_root,
 )
 
 __all__ = [
     "normalize_spaces",
     "normalize_to_string",
-    "remove_all_whitespace"
+    "remove_all_whitespace",
+    "join",
+    "normalize",
+    "project_root",
 ]
