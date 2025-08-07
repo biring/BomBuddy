@@ -1,157 +1,280 @@
-
-|----------- LOCAL -----------|		|-- SERVER--|			
-<Working>-<Staging>-<LocalRepo>		<RemoteRepo>	
+OVERVIEW
+|------------------ LOCAL -------------------|        |----- REMOTE -----|
+[Working Dir] → [Staging Area] → [Local Repo]   ←→       [Remote Repo]
+       ↑             ↑               ↑                         ↑
+    modify          add           commit                   push/pull
+       |
+       └→ [TemporaryStorage]
+       		   ↑
+		[Stash]
+| Action                   | Command                  | Moves data from → to                                    |
+| ------------------------ | ------------------------ | ------------------------------------------------------- |
+| Modify files             | Your editor              | → Working Directory                                     |
+| Stage changes            | `git add`                | Working Directory → Staging Area                        |
+| Commit changes           | `git commit`             | Staging Area → Local Repository                         |
+| Push to remote           | `git push`               | Local Repository → Remote Repository                    |
+| Pull from remote         | `git pull` / `git fetch` | Remote Repository → Local Repository                    |
+| Temporarily save work    | `git stash`              | Working Dir + Staging Area → Stash                      |
+| Restore stashed work     | `git stash apply`        | Stash → Working Dir + (optional) Staging                |
+| Restore & remove         | `git stash pop`          | Stash → Working Dir + (optional) Staging (then deletes) |
 
 RESET GIT CONNECTION
 git config --global --unset-all remote.origin.proxy
-	Resolve error: unable to access 'https://github.com/...': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
+Resolve error: unable to access 'https://github.com/...': OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
 
-GIT MERGE WORKING INTO MAIN
-1. Check out the main branch
-git checkout main
-2. Pull the latest changes from remote main
-git pull origin main --rebase       # Optionally rebase to avoid unnecessary merge commits
-3. Preview changes between main and working branches (optional, but recommended)
-git diff main..working              # See changes before merging
-4. Merge working into main
-git merge working                   # Or use --no-ff for a merge commit
-5. Push changes to the remote main branch
-git push origin main
-6. Fetch latest changes from the remote (optional, if you want to check for updates after pushing)
-git fetch                           # Not strictly necessary after a successful push
-7. Verify the update by viewing the remote main branch's commit history
-git log origin/main --oneline       # View the recent commits
+-------------------------------------------------------------------------------------------------------
+CREATE NEW <feature_branch>
+-------------------------------------------------------------------------------------------------------
+1. Create a new local feature branch
+git branch <feature_branch>             # Create a new local branch for feature development
+# Example: git branch feature/user-auth
 
+2. Verify the new branch was created
+git branch -a                           # List all branches (local + remote)
 
-COMMIT CHANGES TO REMOTE/ORIGIN/WORKING
+3. Switch to the new feature branch
+git checkout <feature_branch>           # Begin working in the new branch
+
+4. Push the new feature branch to the remote
+git push origin <feature_branch>        # Publish the branch to the remote repository
+✅ This enables server-side CI/CD pipelines, remote collaboration, or unit testing
+
+5. Verify the remote feature branch exists
+git branch -a                           # Check both local and remote branches
+⚠️ Remote branch should appear as: remotes/origin/<feature_branch>
+
+-------------------------------------------------------------------------------------------------------
+COMMIT CHANGES TO <feature_branch>
+Use for regular commits during feature development
+-------------------------------------------------------------------------------------------------------
 1. Check which branch you're on
-git branch -a           # List all branches
-git branch              # List local branches
-git branch -r           # List remote branches
+git branch -a                           # List all branches (local + remote)
+git branch                              # List local branches
+git branch -r                           # List remote-tracking branches
+
 2. See the status of modified files
-git status              # Check status of files
-git status -s           # Short status summary
+git status                              # Verbose status of staged and unstaged changes
+git status -s                           # Short summary format (e.g., M for modified)
+
 3. Review the changes made to the code
-git diff                # See changes not yet staged
-git diff <file-name>	# See changes to the specific file not yet staged
-git diff --staged       # See changes that have been staged
+git diff                                # Show unstaged changes to verify what’s about to be committed.
+
 4. Stage changes (add files)
-git add <file-name>     # Stage a specific file
-git add -A              # Stage all changes
-git add .               # Stage changes in the current directory
-5. Commit the staged changes
-git commit -m "Short description" -m "Detailed explanation of changes"
-git commit --verbose    # See the diff of staged changes
-6. Pull the latest changes (to avoid conflicts)
-git pull origin <branch> --rebase  # Avoid merge commits by rebasing
-7. Push changes to the remote branch
-git push origin <branch>  # Push changes to the correct remote branch
-8. Verify your recent commit(s)
-git log -2              # Show last two commits
-git log --oneline       # Compact log view, shows commit hash and message
-9. Check the status again to confirm everything is synced
-git status              # Confirm everything is up-to-date after pushing
+git add <file-name>                     # Stage a specific file
+git add .                               # Stage changes in the current directory
+git add -A                              # Stage all changes (tracked, untracked, and deletions)
 
+5. Review what’s staged before committing
+git diff --staged                       # Show changes that are staged
+git diff <file-name>                    # Show unstaged changes for a specific file
 
-FEATURE DEVELOPMENT - CREATE NEW LOCAL BRANCH
-git branch <feature_branch>
-	Create a new feature branch
-git branch -a
-	Verify new branch is created
-git checkout <feature_branch>
-	Start working on the new feature
-git push origin <feature_branch>
-	Pushed new to remote when done
-	This allows for server unit testing
-git branch -a
-	Verify feature branch is in the remote repository
+6. Commit the staged changes
+git commit -m "Short summary" -m "Detailed description of changes"
+git commit --verbose                    # Opens editor with visible diff of staged changes
 
-FEATURE DEVELOPMENT - MERGE FEATURE TO MASTER AND PUSH TO REMOTE
-git checkout master
-	Switch to master branch
-git pull origin master
-	Make sure you are working of the latest code as other developers may have made changes
-git branch --merged
-	Check merge status
-git merge <feature_branch>
-	Merge feature to master
-git push origin master
-	Push to master branch in the remote 
+7. Pull the latest changes before pushing (to avoid conflicts)
+git pull origin <branch>                # Default pull: fetch + merge
 
-FEATURE DEVELOPMENT - DELETE FEATURE BRANCH
-* switch to master branch. And status is up-to-date. No changes pending.
-git branch --merged
-	Verify feature is merged to master
-git branch -d <feature_branch>
-	Delete local feature branch
-git branch -a
-	Verify feature branch is deleted on the local repo.
-	Remote repo should still show the feature branch
-git push origin --delete <feature_branch>
-	Delete feature branch from remote repository
-git branch -a
-	Verify feature branch is deleted on the remote repo.
+8. Push changes to the remote branch
+git push origin <branch>                # Push your commits upstream
 
+9. Verify your recent commit(s)
+git log -N                              # Show the last N commits
+git log --oneline                       # Compact view: commit hash + message
 
-SWITCH BRANCH
- - run git log to make sure tracked file changes are commited or discarded
- - git switch does not discard changes to tracked file
-git switch [branch-name]
-	Switch to the desired branch
-	
+10. Check status again to confirm sync
+git status                              # Ensure nothing is left uncommitted or unsynced
 
+-------------------------------------------------------------------------------------------------------
+FINAL COMMIT TO <feature_branch>
+To clean commit history before merge to <main>
+-------------------------------------------------------------------------------------------------------
+1. Check which branch you're on
+git branch -a           		        # List all branches (local + remote)
+git branch              		        # List local branches
+git branch -r           		        # List remote-tracking branches
 
-RESET LOCAL BRANCH TO MATCH REMOTE BRANCH AND DISCARD LOCAL COMMITS
-git checkout <your-branch>
-	Navigate to the local branch you wish to reset.
-git fetch origin
-	Fetch the latest data from the remote repository.
-OPTIONAL: git stash
-	Save the changes you have not yet commited.
-git reset --hard origin/<your-branch>
-	Reset your branch. Local branch now matches remote branch.
-	All commits to local branch are discarded.
-git clean -f -d
-	Remove untracked files(-f), directories(-d) 
+2. See the status of modified files
+git status              		        # Verbose status of staged and unstaged changes
+git status -s           		        # Short summary format (e.g., M for modified)
 
-RESET LOCAL BRANCH TO MATCH REMOTE BRANCH BUT PRESERVE LOCAL COMMITS
-git checkout <your-branch>
-	Navigate to the local branch you wish to reset.
-git fetch origin
-	Fetch the latest data from the remote repository.
-git merge @U
-	Merge the changes from the upstream branch (@U) into the current branch
+3. Review the changes made to the code
+git diff                		        # Show unstaged changes to verify what’s about to be committed.
 
+4. Stage changes (add files)
+git add <file-name>     		        # Stage a specific file
+git add .               		        # Stage changes in the current directory
+git add -A              		        # Stage all changes (tracked, untracked, and deletions)
 
-SAVE CHANGES YOU DONT WANT TO COMMIT
-git commit -a -m 'message'
-	Commit message so you know what you are saving
-git branch my-saved-work
-	Work is saved in the <branch> in case you want it back
+5. Review what’s staged before committing
+git diff --staged       		        # Show changes that are staged
+git diff <file-name>    		        # Show unstaged changes for a specific file
 
+6. Review feature commit history (for final commit message or changelog)
+git log origin/main..HEAD		        # View feature commits to write a meaningful, summarized final commit message.
+    				                    # Optional: save as CHANGELOG.md or use in PR description.
+7. Commit the staged changes
+git commit -m "Short summary" -m "Detailed description of changes"
+git commit --verbose    		        # Opens editor with visible diff of staged changes
 
-SAVE CHANGES YOU DONT WANT TO COMMIT TO REMOTE
+8. Pull the latest changes before pushing (to avoid conflicts)
+git pull origin <branch> --rebase
+⚠️ Perform --rebase only after the feature is complete to cleanly replay your commits on top of updated main.
 
-1. DO: git stash
-	Save current file/changes in a 'box' to open later
-2. DO: git clone <repo-url> <directory.
-	Create a copy of your repository. 
-	This is back you can get later
+9. Push changes to the remote branch
+git push origin <branch> --force-with-lease # Overwrites history only if your local remote-tracking ref is current
+⚠️ Required after rebase. Use only on private feature branches.
 
+10. Verify your recent commit(s)
+git log -N                              # Show the last N commits
+git log --oneline                       # Compact view: commit hash + message
 
-DELETE UNTRACKED GIT FILES
-Follow these steps to properly delete and git clean untracked files in your local workspace:
-git clean -n
-	Preview of files that will be deleted.
-git clean -f
-	Force deletion of untracked files.
-git clean -f -d
-	Force deletion of untracked directories.
-git clean -f -x
-	Force deletion of untracked .gitignore files.
+11. Check status again to confirm sync
+git status                              # Ensure nothing is left uncommitted or unsynced
 
+-------------------------------------------------------------------------------------------------------
+MERGE <feature_branch> TO <main>
+-------------------------------------------------------------------------------------------------------
+1. Check out the main branch
+git checkout <main>                  	# Example: git checkout main or git checkout release
 
-GIT COMMIT TEMPLATE
+2. Pull the latest changes from the remote <main> branch
+git pull origin <main>              	# Fetches and merges remote changes into local <main>
+					# OR (optional) rebase to linearize history
+git pull origin <main> --rebase     	# Avoids unnecessary merge commits (use only if team prefers rebase)
+⚠️ Use only one of these commands depending on your team’s strategy: merge vs. rebase.
+
+3. Preview changes between <main> and <feature> (optional, recommended)
+git diff <main>..<feature> --stat  	    # Summarized file-level diff
+git diff <main>..<feature>         	    # Full content diff (optional)
+
+4. Merge <feature> into <main> with a merge commit
+git merge --no-ff <feature>         	# Creates a merge commit even if fast-forward is possible
+✅ This preserves the branch history and is preferred for long-lived branches like main, release, or develop.
+
+5. Push the updated <main> branch to remote
+git push origin <main>
+
+6. Fetch latest changes from the remote (optional, if you want to check for updates after pushing)
+git fetch				                # Not strictly required after push, but useful if you're tracking updates from other collaborators.
+
+7. Verify the update by inspecting commit history on the remote branch
+git log origin/<main> --oneline		    # Verifies successful merge and recent commits
+
+-------------------------------------------------------------------------------------------------------
+TAG <main>
+⚠️ Perform on main branch only after it is upto date and verified
+-------------------------------------------------------------------------------------------------------
+1. Determine next semantic version and perform COMMIT CHANGES TO <main>
+git add <VERSION_FILE>
+git commit -m "Bump version to X.Y.Z" -m "Reason is...."
+git push origin main
+
+2. Create annotated tag
+git tag -a vX.Y.Z -m "Release vX.Y.Z: Summary of key features/fixes"
+
+3 Push tag
+git push origin vX.Y.Z
+
+-------------------------------------------------------------------------------------------------------
+DELETE <feature> BRANCH
+Perform after feature development is complete and has been merged to <main>
+-------------------------------------------------------------------------------------------------------
+1. Check available branches
+git branch -a						        # List all branches (local + remote)
+✅ <feature> and <main> should both be visible
+
+2. Confirm you are on a different branch (not the one you want to delete)
+git checkout <main>					        # Switch to main or another safe branch
+
+3. Verify the feature branch is merged
+git branch --merged <main>				    # Lists local branches already merged into <main>
+⚠️ Ensure <feature_branch> is listed before proceeding with deletion
+
+4. Delete the local feature branch
+git branch -d <feature_branch>				# Deletes local branch (safe delete)
+⚠️ Use `-D` to force delete if not merged (not recommended)
+
+5. Confirm local branch is deleted
+git branch						            # Lists only local branches
+⚠️ <feature_branch> should no longer appear in the list
+
+6. Delete the remote feature branch (if applicable)
+git push origin --delete <feature_branch>   # Removes the feature branch from the remote repository
+
+7. Confirm remote branch is deleted
+git branch -r						        # Lists remote-tracking branches only
+⚠️ <origin/feature_branch> should no longer appear
+
+8. Clean up stale remote-tracking references (optional)
+git fetch --prune					        # Removes deleted remote branches from local references
+
+-------------------------------------------------------------------------------------------------------
+RESET <feature> BRANCH
+Use this when you want to discard local changes and reset your local branch to match the remote
+-------------------------------------------------------------------------------------------------------
+1. Checkout the target local branch
+git checkout <your-branch>				    # Switch to the branch you want to reset
+
+2. Fetch the latest remote updates
+git fetch origin					        # Ensures your local metadata reflects the current state of the remote branch
+
+3. (Optional) Stash any uncommitted changes
+git stash						            # Safely store uncommitted changes in case you want to recover them later
+
+4. Reset the local branch to match the remote branch exactly
+git reset --hard origin/<your-branch>       # Discards all local commits; local branch now mirrors the remote
+⚠️ This will permanently delete any local commits that haven’t been pushed
+
+5. Check the status of untracked files
+git status						            # View staged, unstaged, and untracked files
+
+6. Preview untracked files and directories that may be deleted
+git clean -n <file-path>                    # Preview deletion of a specific untracked file
+git clean -n -d <dir-path>                  # Preview deletion of a specific untracked directory
+✅ Always preview before deleting anything
+
+7. Delete specific untracked files
+git clean -f <file-path>                    # Deletes the specified untracked file
+⚠️ Do not run 'git clean -f' without specifying the file. It will force delete all files not tracked by Git (e.g., temp files, generated logs)
+
+8. Delete specific untracked directories
+git clean -f -d <dir-path>                  # Deletes the specified untracked directory
+⚠️ Do not run 'git clean -f -d' without specifying the folder. It will force delete all folder not tracked by Git (e.g., cache directories, etc.)
+
+-------------------------------------------------------------------------------------------------------
+EDIT LATEST COMMIT MESSAGE
+Edit the most recent commit message — whether it’s still local or already pushed to remote
+-------------------------------------------------------------------------------------------------------
+1. Edit the latest commit message
+git commit --amend
+
+2. Edit in Vim (default Git editor)
+In normal mode (press Esc to enter):
+- Use arrow keys to navigate
+- Press o to insert a new line below
+- Press O to insert a new line above
+- Press i to enter insert mode
+In insert mode:
+- Edit the message text
+- Press Esc to exit insert mode
+To save and exit (in normal mode only):
+:wq   [then press Enter]
+
+3. [Optional] Push the amended commit
+git push --force
+git push --force-with-lease     # Safer when working on a shared branch
+⚠️ Required if the original commit was already pushed to remote
+
+4. Review your updated commit
+git log -1                      # Shows the most recent commit, including the updated message
+
+-------------------------------------------------------------------------------------------------------
+GIT COMMIT MESSAGE TEMPLATE
+-------------------------------------------------------------------------------------------------------
+Use guidelines from https://www.conventionalcommits.org/en/v1.0.0/
+
+GIT COMMIT MESSAGE TEMPLATE
 git commit -m "<type>(<scope>): <short description>"
 -m "<detailed description of the change 1>"
 -m "<detailed description of the change 2>"
@@ -165,4 +288,3 @@ style: Code style changes (e.g., formatting).
 refactor: Refactoring code without changing its functionality.
 test: Adding or modifying tests.
 chore: Routine tasks or updates, like build scripts, dependencies, or CI configuration.
-
