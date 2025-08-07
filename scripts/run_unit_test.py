@@ -1,10 +1,22 @@
-# This script will search and run all unit tests located in the "tests" folder
+"""
+This script discovers and runs all unit tests located in the "tests" folder.
 
-# NOTE:
-# To ensure accurate discovery of all unit tests under the "tests" directory and its subdirectories,
-# every subfolder containing unit tests must be a Python module. This requires that each folder within
-# the "tests" hierarchy include an `__init__.py` file. Without these files, the `unittest` discovery
-# mechanism may fail to locate and execute all test cases correctly.
+NOTE:
+To ensure proper test discovery and import resolution with `unittest`:
+
+1. Both "src" and "tests" must be regular folders in PyCharm
+   (i.e., NOT marked as "Source Root" or "Test Root").
+
+2. The "tests" folder should mirror the module structure of "src".
+   - If `src/parsers/foo.py` exists, then the corresponding test should be placed in
+     `tests/parsers/test_foo.py`.
+   - This parallel structure enables clean separation of source and test logic
+     while preserving consistent import paths.
+
+3. Every folder under "tests" that contains test modules must include an `__init__.py` file.
+   - This allows the folder to be treated as a proper Python package.
+   - Without these files, `unittest` may fail to import and run the test modules.
+"""
 
 
 import os
