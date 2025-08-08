@@ -43,6 +43,9 @@ git push origin <feature_branch>        # Publish the branch to the remote repos
 git branch -a                           # Check both local and remote branches
 ⚠️ Remote branch should appear as: remotes/origin/<feature_branch>
 
+6. Switch to feature branch
+git checkout <feature_branch>           # Switch to branch you want to work on
+
 -------------------------------------------------------------------------------------------------------
 COMMIT CHANGES TO <feature_branch>
 Use for regular commits during feature development
@@ -133,33 +136,42 @@ git log --oneline                       # Compact view: commit hash + message
 git status                              # Ensure nothing is left uncommitted or unsynced
 
 -------------------------------------------------------------------------------------------------------
-MERGE <feature_branch> TO <main>
+MERGE <feature_branch> TO <main> - Linear (Rebase + FF)
+⚠️ Assumption: Both <main> and <feature_branch> are already pushed and up to date before starting.
 -------------------------------------------------------------------------------------------------------
-1. Check out the main branch
-git checkout <main>                  	# Example: git checkout main or git checkout release
+1. Ensure local refs match the server (no surprises)
+git fetch --prune                       # Update remote-tracking refs; clean stale branches
 
-2. Pull the latest changes from the remote <main> branch
-git pull origin <main>              	# Fetches and merges remote changes into local <main>
-					# OR (optional) rebase to linearize history
-git pull origin <main> --rebase     	# Avoids unnecessary merge commits (use only if team prefers rebase)
-⚠️ Use only one of these commands depending on your team’s strategy: merge vs. rebase.
+2. Check out <main>
+git switch <main>                       # Be on the main branch
 
-3. Preview changes between <main> and <feature> (optional, recommended)
-git diff <main>..<feature> --stat  	    # Summarized file-level diff
-git diff <main>..<feature>         	    # Full content diff (optional)
+3. Ensure local <main> matches the remote tip (linear)
+git pull --rebase origin <main>         # Align local main to origin/main without a merge commit
 
-4. Merge <feature> into <main> with a merge commit
-git merge --no-ff <feature>         	# Creates a merge commit even if fast-forward is possible
-✅ This preserves the branch history and is preferred for long-lived branches like main, release, or develop.
+4. Switch to <feature_branch>
+git switch <feature>                    # Prepare to rebase feature on updated main
 
-5. Push the updated <main> branch to remote
-git push origin <main>
+5. Rebase <feature_branch> onto <main>
+git rebase <main>                       # Replay feature commits on latest main; resolve conflicts, then git rebase --continue
 
-6. Fetch latest changes from the remote (optional, if you want to check for updates after pushing)
-git fetch				                # Not strictly required after push, but useful if you're tracking updates from other collaborators.
+6. Update the remote <feature_branch> to reflect the rebase
+git push --force-with-lease origin <feature> # Safe force; protects against overwriting others’ pushes
 
-7. Verify the update by inspecting commit history on the remote branch
-git log origin/<main> --oneline		    # Verifies successful merge and recent commits
+7. [Optional] Preview changes to be merged into <main>
+git diff <main>..<feature> --stat       # Summarized file-level diff (post-rebase)
+git diff <main>..<feature>              # Full content diff
+
+8. Switch back to <main>
+git switch <main>                       # Ready to advance main
+
+9. Fast-forward <main> to the tip of <feature_branch> (guarantees linear history)
+git merge --ff-only <feature>           # Refuses to create a merge commit
+
+10. Push updated <main> to remote
+git push origin <main>                  # Publish the linear history
+
+11. [Optional] Verify the result
+git log --oneline --decorate --graph -n 20 # Should display a straight line (no merge commits)
 
 -------------------------------------------------------------------------------------------------------
 TAG <main>
