@@ -73,7 +73,7 @@ def escape_backslashes(file_path: str) -> str:
     """
     Escapes backslashes in a file path for display or logging.
 
-    Converts all backslashes (`\`) to double backslashes (`\\`) so the path
+    Converts all single backslashes to double backslashes so the path
     resembles a raw string literal. Useful for logging or serialization on
     Windows systems where backslashes are common in paths.
 
