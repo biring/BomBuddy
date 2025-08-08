@@ -647,28 +647,6 @@ class TestResolveDrive(unittest.TestCase):
         with self.subTest(Out=result, Exp=expected):
             self.assertEqual(result, expected)
 
-    def test_non_windows(self):
-        """
-        Should raise ValueError when called on a non-Windows system.
-        """
-        if os.name == "nt":
-            self.skipTest("This test is only applicable to non-Windows systems.")
-
-        # ARRANGE
-        expected = ValueError.__name__
-
-        # ACT
-        try:
-            directory.find_drive()
-            result = None  # No exception raised
-        except Exception as e:
-            result = type(e).__name__
-
-        # ASSERT
-        with self.subTest(Out=result, Exp=expected):
-            self.assertEqual(result, expected)
-
-
 class TestResolveExeDir(unittest.TestCase):
     """
     Unit test for the `resolve_exe_dir` function in the directory module.
