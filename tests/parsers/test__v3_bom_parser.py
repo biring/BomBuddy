@@ -122,7 +122,12 @@ class TestIsV3Bom(unittest.TestCase):
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsNotBomTemplate.xlsx')
         # Read Excel file as pandas data frame
-        df = pd.read_excel(file_path, sheet_name=None)
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            sheet_names = xls.sheet_names  # Get all sheet names
+            # Read all sheets into a dict {sheet_name: DataFrame}
+            df = {}
+            for name in sheet_names:
+                df[name] = pd.read_excel(xls, sheet_name=name, dtype=str, header=None)
         self.assertTrue(df)  # Sanity check: workbook is not empty
         sheets = list(df.items())
         expected = False
@@ -145,7 +150,12 @@ class TestIsV3Bom(unittest.TestCase):
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsVersion2BomTemplate.xlsx')
         # Read Excel file as pandas data frame
-        df = pd.read_excel(file_path, sheet_name=None)
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            sheet_names = xls.sheet_names  # Get all sheet names
+            # Read all sheets into a dict {sheet_name: DataFrame}
+            df = {}
+            for name in sheet_names:
+                df[name] = pd.read_excel(xls, sheet_name=name, dtype=str, header=None)
         self.assertTrue(df)  # Sanity check: workbook is not empty
         sheets = list(df.items())
         expected = False
@@ -168,7 +178,12 @@ class TestIsV3Bom(unittest.TestCase):
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, 'test_data', 'IsVersion3BomTemplate.xlsx')
         # Read Excel file as pandas data frame
-        df = pd.read_excel(file_path, sheet_name=None)
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            sheet_names = xls.sheet_names  # Get all sheet names
+            # Read all sheets into a dict {sheet_name: DataFrame}
+            df = {}
+            for name in sheet_names:
+                df[name] = pd.read_excel(xls, sheet_name=name, dtype=str, header=None)
         self.assertTrue(df)  # Checks that the dict is not empty
         sheets = list(df.items())
         expected = True
@@ -199,8 +214,9 @@ class TestParseBoardHeader(unittest.TestCase):
         # Load test Excel sheet containing a known V3 BOM header
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "IsVersion3BomTemplate.xlsx")
-        full_sheet_df = pd.read_excel(file_path, dtype=str, header=None)
-
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            sheet_name = xls.sheet_names[0]  # first/only sheet
+            full_sheet_df = pd.read_excel(xls, sheet_name=sheet_name, dtype=str, header=None)
         # Use the top N rows as the header block for parsing. Adjust as needed.
         header_block_df = full_sheet_df.iloc[:10]
 
@@ -246,7 +262,8 @@ class TestParseBoardSheet(unittest.TestCase):
         # Load BOM sheet from test Excel file
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "Version3BomSample.xlsx")
-        df = pd.read_excel(file_path, dtype=str, header=None)
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            df = pd.read_excel(xls, dtype=str, header=None)
 
         expected = Board(
             header=Header(
@@ -526,10 +543,15 @@ class TestParseBom(unittest.TestCase):
         # ARRANGE
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "Version3BomMultiBoard.xlsx")
-        xls = pd.ExcelFile(file_path)
-
-        # Parse all sheets into (sheet name, DataFrame) pairs
-        sheets = [(name, xls.parse(name, dtype=str, header=None)) for name in xls.sheet_names]
+        with pd.ExcelFile(file_path, engine="openpyxl") as xls:
+            # Create an empty list to store (sheet_name, DataFrame) pairs
+            sheets = []
+            # Loop through each sheet name in the Excel file
+            for name in xls.sheet_names:
+                # Parse the sheet into a DataFrame, forcing all cells to string, no header
+                df = xls.parse(name, dtype=str, header=None)
+                # Add the tuple (sheet_name, DataFrame) to our list
+                sheets.append((name, df))
 
         expected = Bom(
             file_name="",
