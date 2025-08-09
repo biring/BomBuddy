@@ -304,6 +304,86 @@ class TestGetFilesInDirectory(unittest.TestCase):
             self.assertEqual(result, expected)
 
 
+class TestIsExcelFileExtension(unittest.TestCase):
+    """
+    Unit test for the `is_excel_file_extension` function.
+
+    This test ensures that:
+      - `.xlsx` extension is accepted (case-sensitive)
+      - Non-string inputs raise `TypeError`
+      - Any extension other than `.xlsx` raises `ValueError`
+    """
+
+    def test_valid_extension(self):
+        """
+        Should pass without exception for valid `.xlsx` file paths.
+        """
+        # ARRANGE
+        valid_files = [
+            "report.xlsx",
+            "folder/data.xlsx",
+            "/path/to/file.xlsx"
+        ]
+        expected = None
+
+        for file_path in valid_files:
+            # ACT
+            try:
+                file_util.is_excel_file_extension(file_path)
+                result = None  # No exception means None
+            except Exception as e:
+                result = type(e).__name__
+
+            # ASSERT — no exception should be raised
+            with self.subTest(In=file_path, Out=result, Exp=expected):
+                self.assertIsNone(result)
+
+    def test_non_string_input(self):
+        """
+        Should raise TypeError when input is not a string.
+        """
+        # ARRANGE
+        invalid_inputs = [123, None, 45.6, ["file.xlsx"]]
+        expected = TypeError.__name__
+
+        for value in invalid_inputs:
+            # ACT
+            try:
+                file_util.is_excel_file_extension(value)  # type: ignore[arg-type]
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+
+            # ASSERT
+            with self.subTest(In=value, Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+    def test_invalid_extension(self):
+        """
+        Should raise ValueError for extensions other than `.xlsx` (case-sensitive).
+        """
+        # ARRANGE
+        invalid_files = [
+            "file.xls",
+            "file.XLSX",  # Case-sensitive check
+            "file.txt",
+            "file.csv"
+        ]
+        expected = RuntimeError.__name__
+
+        for file_path in invalid_files:
+            # ACT
+            try:
+                file_util.is_excel_file_extension(file_path)
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+
+            # ASSERT
+            with self.subTest(In=file_path, Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+
 class TestIsExistingFile(unittest.TestCase):
     """
     Unit test for the `is_existing_file` function in the file utility module.

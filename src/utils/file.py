@@ -144,6 +144,26 @@ def get_files_in_directory(dir_path: str, extensions: Optional[list[str]] = None
     return tuple(matched_files)
 
 
+def is_excel_file_extension(file_path: str) -> None:
+    """
+    Validates that the given file path has a `.xlsx` extension (case-sensitive).
+
+    Args:
+        file_path (str): Path to validate.
+
+    Raises:
+        TypeError: If `file_path` is not a string.
+        ValueError: If the extension is not `.xlsx`.
+    """
+    if not isinstance(file_path, str):
+        raise TypeError(f"Expected file_path to be a string, got {type(file_path).__name__}.")
+
+    if not file_path.endswith(EXCEL_FILE_TYPE):
+        raise RuntimeError(
+            f'Invalid file extension for "{file_path}". Only ".xlsx" (lowercase) is supported.'
+        )
+
+
 def is_existing_file(file_path: str) -> bool:
     """
     Determines if a given path exists and is a regular file.
