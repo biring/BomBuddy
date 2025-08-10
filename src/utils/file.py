@@ -37,10 +37,53 @@ License:
 
 import os
 from typing import Optional
+from pathlib import Path
 
 # MODULE CONSTANTS
 TEXT_FILE_TYPE = ".txt"
 EXCEL_FILE_TYPE = ".xlsx"
+JSON_FILE_EXT = ".json"
+
+
+def assert_filename_with_extension(file_path: str, expected_ext: str) -> None:
+    """
+    Ensures that a file's name has exactly one dot and matches the required extension.
+
+    This function validates that the filename portion of the provided path:
+      - Contains exactly one dot, separating the name and extension.
+      - Has an extension that exactly matches the specified `expected_ext`
+        (comparison is case-sensitive).
+
+    Args:
+        file_path (str): Absolute or relative path to the file.
+        expected_ext (str): Required file extension including the leading dot (e.g., ".txt").
+
+    Returns:
+        None: This function only validates the filename and raises exceptions for violations.
+
+    Raises:
+        RuntimeError: If validation cannot be completed due to errors
+    """
+    try:
+        path_obj = Path(file_path)  # Convert string path to a Path object for easy name/suffix access
+        file_name = path_obj.name  # Extract just the filename (without directories)
+        file_ext = path_obj.suffix  # Extract the extension
+
+        # Check that the filename contains exactly one dot
+        if file_name.count(".") != 1:
+            raise ValueError(f"Invalid filename '{file_name}': must contain exactly one dot.")
+
+        # Validate the file extension matches the expected one (case-sensitive)
+        if file_ext != expected_ext:
+            raise ValueError(
+                f"Invalid extension for '{file_name}': expected '{expected_ext}', got '{file_ext}'."
+            )
+    except Exception as err:
+        # Wrap and raise a RuntimeError with the original exception details
+        raise RuntimeError(
+            f"Failed file name and extension check '{file_path}'\n"
+            f"{type(err).__name__} - {err}"
+        ) from err
 
 
 def build_file_path(folder: str, file: str) -> str:
@@ -142,26 +185,6 @@ def get_files_in_directory(dir_path: str, extensions: Optional[list[str]] = None
         matched_files = immediate_files
 
     return tuple(matched_files)
-
-
-def is_excel_file_extension(file_path: str) -> None:
-    """
-    Validates that the given file path has a `.xlsx` extension (case-sensitive).
-
-    Args:
-        file_path (str): Path to validate.
-
-    Raises:
-        TypeError: If `file_path` is not a string.
-        ValueError: If the extension is not `.xlsx`.
-    """
-    if not isinstance(file_path, str):
-        raise TypeError(f"Expected file_path to be a string, got {type(file_path).__name__}.")
-
-    if not file_path.endswith(EXCEL_FILE_TYPE):
-        raise RuntimeError(
-            f'Invalid file extension for "{file_path}". Only ".xlsx" (lowercase) is supported.'
-        )
 
 
 def is_existing_file(file_path: str) -> bool:

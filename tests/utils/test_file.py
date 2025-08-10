@@ -40,6 +40,116 @@ import shutil
 import src.utils.file as file_util
 
 
+class TestAssertFilenameWithExtension(unittest.TestCase):
+    """
+    Unit test for the `assert_filename_with_extension` function.
+
+    This test ensures that:
+      1) Filenames with exactly one dot and correct extension pass validation.
+      2) Filenames with no dot, multiple dots, or incorrect extension raise ValueError.
+      3) Extension check is case-insensitive.
+    """
+
+    def test_valid_names(self):
+        """
+        Should pass silently when the filename contains one dot and matches the expected extension.
+        """
+        # ARRANGE
+        test_cases = [
+            ("report.txt", ".txt"),
+            ("data.json", ".json"),
+            ("archive.xlsx", ".xlsx"),
+        ]
+        expected = None  # No error raised
+
+        for file_path, expected_ext in test_cases:
+            try:
+                # ACT
+                file_util.assert_filename_with_extension(file_path, expected_ext)
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+            # ASSERT
+            with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+    def test_invalid_input(self):
+        """
+        Should raise TypeError when input is not a string.
+        """
+        # ARRANGE
+        test_cases = [
+            (123, ".txt"),
+            (None, ".txt"),
+            (45.6, ".txt"),
+            (["my.file.txt"], ".txt"),
+            ("file.txt", 123),
+            ("file.txt", None),
+            ("file.txt", -67.98),
+            ("file.txt", [".txt"]),
+
+        ]
+        expected = RuntimeError.__name__
+
+        for file_path, expected_ext in test_cases:
+            try:
+                # ACT
+                file_util.assert_filename_with_extension(file_path, expected_ext)
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+            # ASSERT
+            with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+    def test_invalid_dot_count(self):
+        """
+        Should raise ValueError when filename has no dot or more than one dot.
+        """
+        # ARRANGE
+        test_cases = [
+            ("filetxt", ".txt"),  # No dot
+            ("my.file.txt", ".txt"),  # Multiple dots
+        ]
+        expected = RuntimeError.__name__
+
+        for file_path, expected_ext in test_cases:
+            try:
+                # ACT
+                file_util.assert_filename_with_extension(file_path, expected_ext)
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+            # ASSERT
+            with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+    def test_invalid_extension(self):
+        """
+        Should raise ValueError when the extension does not match the expected one.
+        """
+        # ARRANGE
+        test_cases = [
+            ("file.txt", ".csv"),
+            ("data.XLSX", ".xlsx"),
+            ("confid.jSon", ".json"),
+            ("image.jpeg", ".jpg")
+
+        ]
+        expected = RuntimeError.__name__
+
+        for file_path, expected_ext in test_cases:
+            try:
+                # ACT
+                file_util.assert_filename_with_extension(file_path, expected_ext)
+                result = None
+            except Exception as e:
+                result = type(e).__name__
+            # ASSERT
+            with self.subTest(Out=result, Exp=expected):
+                self.assertEqual(result, expected)
+
+
 class TestBuildFilePath(unittest.TestCase):
     """
     Unit test for the `build_file_path` function in the file utility module.
@@ -302,86 +412,6 @@ class TestGetFilesInDirectory(unittest.TestCase):
         # ASSERT
         with self.subTest(Out=result, Exp=expected):
             self.assertEqual(result, expected)
-
-
-class TestIsExcelFileExtension(unittest.TestCase):
-    """
-    Unit test for the `is_excel_file_extension` function.
-
-    This test ensures that:
-      - `.xlsx` extension is accepted (case-sensitive)
-      - Non-string inputs raise `TypeError`
-      - Any extension other than `.xlsx` raises `ValueError`
-    """
-
-    def test_valid_extension(self):
-        """
-        Should pass without exception for valid `.xlsx` file paths.
-        """
-        # ARRANGE
-        valid_files = [
-            "report.xlsx",
-            "folder/data.xlsx",
-            "/path/to/file.xlsx"
-        ]
-        expected = None
-
-        for file_path in valid_files:
-            # ACT
-            try:
-                file_util.is_excel_file_extension(file_path)
-                result = None  # No exception means None
-            except Exception as e:
-                result = type(e).__name__
-
-            # ASSERT — no exception should be raised
-            with self.subTest(In=file_path, Out=result, Exp=expected):
-                self.assertIsNone(result)
-
-    def test_non_string_input(self):
-        """
-        Should raise TypeError when input is not a string.
-        """
-        # ARRANGE
-        invalid_inputs = [123, None, 45.6, ["file.xlsx"]]
-        expected = TypeError.__name__
-
-        for value in invalid_inputs:
-            # ACT
-            try:
-                file_util.is_excel_file_extension(value)  # type: ignore[arg-type]
-                result = None
-            except Exception as e:
-                result = type(e).__name__
-
-            # ASSERT
-            with self.subTest(In=value, Out=result, Exp=expected):
-                self.assertEqual(result, expected)
-
-    def test_invalid_extension(self):
-        """
-        Should raise ValueError for extensions other than `.xlsx` (case-sensitive).
-        """
-        # ARRANGE
-        invalid_files = [
-            "file.xls",
-            "file.XLSX",  # Case-sensitive check
-            "file.txt",
-            "file.csv"
-        ]
-        expected = RuntimeError.__name__
-
-        for file_path in invalid_files:
-            # ACT
-            try:
-                file_util.is_excel_file_extension(file_path)
-                result = None
-            except Exception as e:
-                result = type(e).__name__
-
-            # ASSERT
-            with self.subTest(In=file_path, Out=result, Exp=expected):
-                self.assertEqual(result, expected)
 
 
 class TestIsExistingFile(unittest.TestCase):
