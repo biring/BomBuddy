@@ -1,3 +1,43 @@
+"""
+Unit tests for Excel utilities in `src.utils.excel`.
+
+This module validates behavior for:
+ - map_excel_sheets_to_string_dataframes: reads all sheets to DataFrames of strings
+ - read_excel_file: loads a multi-sheet .xlsx into {sheet_name: DataFrame[str]}
+ - sanitize_sheet_name_for_excel: removes invalid chars, enforces 31-char limit, str-coerces
+ - write_frame_to_excel: writes a single DataFrame to .xlsx (no index), wraps errors
+ - write_sheets_to_excel: writes multiple DataFrames to sheets with sanitization and overwrite rules
+
+Tests cover:
+ - Round-trip fidelity (cell-by-cell) across mixed types, blanks → "", and headers
+ - Input validation (non-Excel inputs, non-string paths, empty inputs)
+ - Overwrite behavior (exists + overwrite=False → RuntimeError; True → replace)
+ - File-system edge cases (read-only files, non-existent directories)
+ - Pandas default sheet naming when a falsy sheet name is supplied
+
+Example Usage:
+    # Discovery (from repo root):
+    python -m unittest tests/utils/test_excel.py
+
+    # Run directly:
+    python tests/utils/test_excel.py
+
+Dependencies:
+ - Python >= 3.9
+ - Standard Library: os, shutil, stat, tempfile, unittest
+ - External: pandas (>= 1.5 recommended), openpyxl (Excel engine)
+ - Local Module Under Test: src.utils.excel
+
+Notes:
+ - Tests use temporary directories/files; all artifacts are cleaned in tearDown.
+ - Comparisons coerce values to string where functions promise string outputs.
+ - Some path/permission tests are platform-sensitive (e.g., read-only semantics).
+ - No mocks are used; tests exercise real pandas/openpyxl I/O.
+
+License:
+ - Internal Use Only
+"""
+
 import os
 import shutil
 import stat
