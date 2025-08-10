@@ -42,8 +42,12 @@ import os
 import shutil
 import tempfile
 import unittest
+import re
+import copy
 
 import src.utils.json as json_util
+
+from datetime import datetime, timezone
 
 
 class TestDictToJsonString(unittest.TestCase):
@@ -456,6 +460,532 @@ class TestSaveJsonFile(unittest.TestCase):
         # ASSERT
         with self.subTest(Out=result, Exp=expected_error):
             self.assertEqual(result, expected_error)
+
+
+class TestParseStrictKeyValueToDict(unittest.TestCase):
+    """
+    Unit tests for the `parse_strict_key_value_to_dict` function in `src.utils.json`.
+
+    This suite verifies that a quoted key–value configuration text is parsed into a
+    dictionary when lines conform to the strict `"Key" = "Value"` format, while:
+      - Ignoring empty lines and comment-only lines.
+      - Stripping trailing comments introduced by `#`.
+      - Skipping invalid lines without failing.
+      - Raising an error on duplicate keys.
+
+    Scope: Tests focus strictly on input→output behavior implemented in the function,
+    without asserting on logging/printing side effects for invalid lines.
+    """
+
+    def test_basic_parsing(self):
+        """
+        Should parse multiple valid lines into a dictionary.
+        """
+        # ARRANGE
+        src = "config.txt"
+        text = (
+            '"Name" = "Alice"\n'
+            '"City" = "Paris"\n'
+            '"Age" = "30"\n'
+        )
+        expected = {"Name": "Alice", "City": "Paris", "Age": "30"}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_trailing_comments_and_whitespace(self):
+        """
+        Should strip trailing comments and surrounding whitespace before validation.
+        """
+        # ARRANGE
+        src = "cfg.conf"
+        text = (
+            '   "KeyA"   =   "Value A"    # trailing comment\n'
+            '"KeyB"="Value B"#another comment\n'
+            '"KeyC" = ""   # empty string value is allowed\n'
+        )
+        expected = {"KeyA": "Value A", "KeyB": "Value B", "KeyC": ""}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_ignores_comments_and_empty_lines(self):
+        """
+        Should ignore blank lines and lines that are comments (including those reduced to empty after '#').
+        """
+        # ARRANGE
+        src = "settings.kv"
+        text = (
+            "\n"
+            "# Full-line comment\n"
+            '   # Indented full-line comment\n'
+            '"Mode" = "Prod"\n'
+            '   # comment only after spaces\n'
+            '"Level" = "High"  # keep this\n'
+            "   \n"
+            " # another (indented) comment line\n"
+        )
+        expected = {"Mode": "Prod", "Level": "High"}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_invalid_lines_are_skipped(self):
+        """
+        Should skip non-conforming lines and keep only valid `"Key" = "Value"` entries.
+        """
+        # ARRANGE
+        src = "bad_lines.txt"
+        text = (
+            'Key = "no_quotes_on_key"\n'  # invalid (key not quoted)
+            '"NoEquals"  "MissingEquals"\n'  # invalid (no equals)
+            '"Good" = "Yes"\n'  # valid
+            '"AlsoGood"="True"\n'  # valid
+            '"Bad" = "Unclosed\n'  # invalid (unterminated quote)
+        )
+        expected = {"Good": "Yes", "AlsoGood": "True"}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_duplicate_keys_raises(self):
+        """
+        Should raise RuntimeError if the same key appears more than once.
+        """
+        # ARRANGE
+        src = "dupe.cfg"
+        text = (
+            '"A" = "1"\n'
+            '"B" = "2"\n'
+            '"A" = "3"\n'  # duplicate key: "A"
+        )
+        expected_error = RuntimeError.__name__
+
+        # ACT
+        try:
+            json_util.parse_strict_key_value_to_dict(src, text)
+            result = ""  # No exception raised (unexpected)
+        except Exception as e:
+            result = type(e).__name__
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected_error):
+            self.assertEqual(result, expected_error)
+
+    def test_all_whitespace_and_trailing_comment_only_lines(self):
+        """
+        Should ignore lines that become empty after stripping trailing comments and whitespace.
+        """
+        # ARRANGE
+        src = "comments_only.txt"
+        text = (
+            "   # just a comment\n"
+            "\t  # another comment with leading whitespace\n"
+            '"K" = "V"   # valid with trailing comment\n'
+            "   #\n"
+        )
+        expected = {"K": "V"}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_value_empty_string_is_allowed(self):
+        """
+        Should allow empty quoted values (`""`) and parse them as empty strings.
+        """
+        # ARRANGE
+        src = "empty_value.cfg"
+        text = '"Empty" = ""\n"NonEmpty" = "x"'
+        expected = {"Empty": "", "NonEmpty": "x"}
+
+        # ACT
+        result = json_util.parse_strict_key_value_to_dict(src, text)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+
+class TestNowUtcIso(unittest.TestCase):
+    """
+    Unit tests for the `now_utc_iso` function in `src.utils.json`.
+
+    This suite verifies that the function:
+      - Returns an ISO 8601 timestamp string with a 'Z' UTC suffix.
+      - Is precise to the second (no microseconds present).
+      - Produces a time value consistent with the current UTC time at call.
+    """
+
+    def test_format_and_suffix(self):
+        """
+        Should return a string in the exact 'YYYY-MM-DDTHH:MM:SSZ' format with 'Z' suffix.
+        """
+        # ARRANGE
+        iso_regex = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+        # ACT
+        result = json_util.now_utc_iso()
+
+        # ASSERT
+        # Type check
+        with self.subTest(Out=type(result).__name__, Exp=str.__name__):
+            self.assertIsInstance(result, str)
+
+        # Ends with 'Z'
+        with self.subTest(Out=result.endswith("Z"), Exp=True):
+            self.assertTrue(result.endswith("Z"))
+
+        # Exact length "YYYY-MM-DDTHH:MM:SSZ" == 20 chars
+        with self.subTest(Out=len(result), Exp=20):
+            self.assertEqual(len(result), 20)
+
+        # 'T' separator at the expected index (10)
+        with self.subTest(Out=result[10], Exp="T"):
+            self.assertEqual(result[10], "T")
+
+        # Matches strict ISO pattern with Z suffix
+        with self.subTest(Out=bool(iso_regex.match(result)), Exp=True):
+            self.assertTrue(iso_regex.match(result) is not None)
+
+        # No microseconds or explicit offset in the string
+        with self.subTest(Out=("." in result), Exp=False):
+            self.assertNotIn(".", result)
+        with self.subTest(Out=("+00:00" in result), Exp=False):
+            self.assertNotIn("+00:00", result)
+
+    def test_value_within_current_utc_bounds(self):
+        """
+        Should produce a timestamp that falls between the UTC instants captured
+        immediately before and after the call (inclusive), at second precision.
+        """
+        # ARRANGE
+        # Capture lower bound (truncate to seconds)
+        lower = datetime.now(timezone.utc).replace(microsecond=0)
+
+        # ACT
+        text_ts = json_util.now_utc_iso()
+
+        # Capture upper bound (truncate to seconds)
+        upper = datetime.now(timezone.utc).replace(microsecond=0)
+
+        # Convert back to aware UTC datetime for comparison
+        parsed = datetime.strptime(text_ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+        # ASSERT
+        # Ensure parsed time is between lower and upper (inclusive)
+        with self.subTest(Out=parsed.isoformat(), Exp=f"[{lower.isoformat()} .. {upper.isoformat()}]"):
+            self.assertLessEqual(lower, parsed)
+            self.assertLessEqual(parsed, upper)
+
+    def test_second_precision_no_microseconds(self):
+        """
+        Should represent time with second-level precision only (no microseconds).
+        """
+        # ARRANGE & ACT
+        text_ts = json_util.now_utc_iso()
+        parsed = datetime.strptime(text_ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+        # ASSERT
+        with self.subTest(Out=parsed.microsecond, Exp=0):
+            self.assertEqual(parsed.microsecond, 0)
+
+
+class TestComputeDictChecksumUint32(unittest.TestCase):
+    """
+    Unit tests for `compute_dict_checksum_uint32` in `src.utils.json`.
+
+    These tests verify deterministic, order-independent checksumming of a dict by:
+      - Sorting keys lexicographically,
+      - Concatenating key+value text (values stringified),
+      - UTF-8 byte summation modulo 2^32.
+
+    Scope: Input→output correctness only. No mocks, no logging/print assertions.
+    """
+
+    def test_example_from_docstring_ascii(self):
+        """
+        Should match the worked example: {"a": "1", "b": "2"} → sum("a1b2") = 294.
+        """
+        # ARRANGE
+        data = {"b": "2", "a": "1"}  # Deliberately unsorted order
+        expected = 294  # 'a1b2' bytes → 97+49+98+50
+
+        # ACT
+        result = json_util.compute_dict_checksum_uint32(data)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_insertion_order_independence(self):
+        """
+        Should produce the same checksum regardless of dict insertion order.
+        """
+        # ARRANGE
+        data_a = {"x": "10", "a": "Z", "m": "7"}
+        data_b = {"m": "7", "x": "10", "a": "Z"}  # Same pairs, different order
+
+        # ACT
+        result_a = json_util.compute_dict_checksum_uint32(data_a)
+        result_b = json_util.compute_dict_checksum_uint32(data_b)
+
+        # ASSERT
+        with self.subTest(Out=result_a, Exp=result_b):
+            self.assertEqual(result_a, result_b)
+
+    def test_empty_dict_returns_zero(self):
+        """
+        Should return 0 for an empty dictionary (no bytes to sum).
+        """
+        # ARRANGE
+        data = {}
+        expected = 0
+
+        # ACT
+        result = json_util.compute_dict_checksum_uint32(data)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_unicode_utf8_handling(self):
+        """
+        Should correctly sum UTF-8 bytes for non-ASCII characters.
+        Example: {"a": "1", "Δ": "é"} → bytes("a1Δé") = [97,49,206,148,195,169] → 864.
+        """
+        # ARRANGE
+        data = {"Δ": "é", "a": "1"}  # Sorted keys: "a", "Δ" → concat "a1Δé"
+        expected = 864  # 97 + 49 + 206 + 148 + 195 + 169
+
+        # ACT
+        result = json_util.compute_dict_checksum_uint32(data)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_value_stringification_for_non_string_values(self):
+        """
+        Should convert non-string values to strings before concatenation.
+        Example: {"x": 10, "y": True} → concat "x10yTrue" → sum = 754.
+        """
+        # ARRANGE
+        data = {"x": 10, "y": True}  # str(10) → "10", str(True) → "True"
+        expected = 754  # bytes("x10yTrue") sum
+
+        # ACT
+        result = json_util.compute_dict_checksum_uint32(data)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_uint32_range_property_on_reasonable_input(self):
+        """
+        Should always return an int within the uint32 range [0, 2^32-1].
+        (Property check on a moderately sized input.)
+        """
+        # ARRANGE
+        # Build a moderately large mapping; keys sort lexicographically due to zero-padding.
+        data = {f"k{str(i).zfill(4)}": f"v{str(i * i)}" for i in range(0, 500)}
+
+        # ACT
+        result = json_util.compute_dict_checksum_uint32(data)
+
+        # ASSERT
+        in_range = 0 <= result <= 0xFFFFFFFF
+        with self.subTest(Out=in_range, Exp=True):
+            self.assertTrue(in_range)
+
+
+class TestVerifyFoundationJsonChecksum(unittest.TestCase):
+    """
+    Unit tests for `verify_foundation_json_checksum` in `src.utils.json`.
+
+    This suite validates that the function:
+      - Returns True when the stored checksum (int or numeric string) matches the checksum
+        recomputed from the `data` section.
+      - Returns False when either the data changes or the stored checksum is incorrect.
+
+    Scope: Input→output correctness only (no mocking). Assumes a well-formed object with
+    required keys per the function contract.
+    """
+
+    def test_matches_checksum_with_int_meta(self):
+        """
+        Should return True when meta.checksum (int) matches the computed checksum of data.
+        """
+        # ARRANGE
+        data = {"a": "1", "b": "2", "Δ": "é"}  # Realistic sample including Unicode
+        checksum = json_util.compute_dict_checksum_uint32(data)
+        obj = {"meta": {"checksum": checksum}, "data": data}
+        expected = True
+
+        # ACT
+        result = json_util.verify_foundation_json_checksum(obj)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_matches_checksum_with_string_meta(self):
+        """
+        Should return True when meta.checksum is a numeric string that equals the computed checksum.
+        """
+        # ARRANGE
+        data = {"x": 10, "y": True, "z": "ok"}  # Non-string values get stringified in checksum helper
+        checksum = json_util.compute_dict_checksum_uint32(data)
+        obj = {"meta": {"checksum": str(checksum)}, "data": data}
+        expected = True
+
+        # ACT
+        result = json_util.verify_foundation_json_checksum(obj)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_returns_false_when_data_changed(self):
+        """
+        Should return False if data changes after checksum was computed and stored.
+        """
+        # ARRANGE
+        original_data = {"k1": "v1", "k2": "v2"}
+        checksum = json_util.compute_dict_checksum_uint32(original_data)
+
+        # Create object but tamper the data (simulate drift) without updating checksum
+        obj = {"meta": {"checksum": checksum}, "data": {"k1": "v1", "k2": "v2X"}}
+        expected = False
+
+        # ACT
+        result = json_util.verify_foundation_json_checksum(obj)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+    def test_returns_false_when_checksum_incorrect(self):
+        """
+        Should return False if the stored checksum does not match the computed checksum.
+        """
+        # ARRANGE
+        data = {"alpha": "A", "beta": "B"}
+        correct_checksum = json_util.compute_dict_checksum_uint32(data)
+
+        # Use an incorrect checksum (off-by-one) in meta
+        obj = {"meta": {"checksum": correct_checksum + 1}, "data": data}
+        expected = False
+
+        # ACT
+        result = json_util.verify_foundation_json_checksum(obj)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+
+class TestExtractFoundationData(unittest.TestCase):
+    """
+    Unit tests for `extract_foundation_data` in `src.utils.json`.
+
+    This suite verifies that the function:
+      - Returns a new `dict` (not the same object) containing the same key/value pairs.
+      - Performs a *shallow* copy: top-level mutations to the returned dict do not
+        affect the original, while mutations to shared nested objects are visible.
+      - Accepts a value for `foundation['data']` that is convertible to `dict`.
+
+    Scope: Input→output correctness only; assumes well-formed input per the function
+    contract and does not test exceptions or logging.
+    """
+
+    def test_returns_new_equal_dict(self):
+        """
+        Should return a new dict equal in content, not the same object identity.
+        """
+        # ARRANGE
+        foundation = {"data": {"a": 1, "b": 2}}
+        expected = {"a": 1, "b": 2}
+
+        # ACT
+        result = json_util.extract_foundation_data(foundation)
+
+        # ASSERT
+        with self.subTest(Out=isinstance(result, dict), Exp=True):
+            self.assertIsInstance(result, dict)
+
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
+
+        with self.subTest(Out=(result is foundation["data"]), Exp=False):
+            self.assertIsNot(result, foundation["data"])
+
+    def test_shallow_copy_semantics(self):
+        """
+        Should behave as a shallow copy:
+          - Top-level mutations on the returned dict do not affect the source.
+          - Nested objects remain shared (mutations reflect in both).
+        """
+        # ARRANGE
+        nested = {"count": 1}
+        foundation = {"data": {"x": 10, "meta": nested}}
+        original_top_level = copy.deepcopy(foundation["data"])  # Snapshot of original top-level
+
+        # ACT
+        result = json_util.extract_foundation_data(foundation)
+
+        # Mutate top-level of result (add a new key)
+        result["y"] = 99
+
+        # Mutate a nested shared object from result
+        result["meta"]["count"] = 42
+
+        # ASSERT
+        # Top-level addition should NOT appear in source (different dict objects)
+        with self.subTest(Out=("y" in foundation["data"]), Exp=False):
+            self.assertNotIn("y", foundation["data"])
+
+        # Nested mutation should reflect in both (since nested object is shared in shallow copy)
+        with self.subTest(Out=foundation["data"]["meta"]["count"], Exp=42):
+            self.assertEqual(foundation["data"]["meta"]["count"], 42)
+
+        # Unchanged original keys remain intact aside from intentional nested change
+        with self.subTest(Out=foundation["data"]["x"], Exp=original_top_level["x"]):
+            self.assertEqual(foundation["data"]["x"], original_top_level["x"])
+
+    def test_accepts_mapping_convertible_value(self):
+        """
+        Should accept a `foundation['data']` value that can be converted to a dict (e.g., list of pairs).
+        """
+        # ARRANGE
+        foundation = {"data": [("a", "1"), ("b", "2")]}
+        expected = {"a": "1", "b": "2"}
+
+        # ACT
+        result = json_util.extract_foundation_data(foundation)
+
+        # ASSERT
+        with self.subTest(Out=result, Exp=expected):
+            self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
