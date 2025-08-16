@@ -2,7 +2,7 @@
 Internal constants and field mappings for version 3 BOM model support.
 
 This module defines string constants and mapping dictionaries used to translate
-raw Excel headers into structured model attributes (Header, Item). It enables
+raw Excel headers into structured model attributes (Header, Row). It enables
 automated parsing workflows within the Version 3 BOM parser.
 
 Main capabilities:
@@ -135,17 +135,17 @@ class BoardTableFields:
 
 
 """
-Mapping of component table column labels to Item dataclass attributes.
+Mapping of component table column labels to Row dataclass attributes.
 
 This dictionary translates raw Excel column headers from the Version 3 BOM template 
 (as defined in `BoardTableFields`) into corresponding attribute names 
-of the internal `Item` dataclass. It enables automated parsing of component-level 
+of the internal `Row` dataclass. It enables automated parsing of component-level 
 data into structured models during BOM ingestion.
 
 Key:
     str: Excel label for a component table column (e.g., "Qty")
 Value:
-    str: Attribute name in the `Item` dataclass (e.g., "qty")
+    str: Attribute name in the `Row` dataclass (e.g., "qty")
 """
 TABLE_LABEL_TO_ATTR_MAP = {
     BoardTableFields.ITEM: "item",

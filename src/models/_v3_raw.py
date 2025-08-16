@@ -3,7 +3,7 @@ Raw data model for the version 3 BOM template.
 
 This module defines structured Python dataclasses that mirror the layout of
 version 3 excel based Bill of Materials (BOM) files. It captures metadata,
-board-level information, and individual line items exactly as they appear in
+board-level information, and individual rows exactly as they appear in
 the source, with all fields represented as plain strings.
 
 These models serve as the initial parsed representation created by BOM parsers
@@ -11,7 +11,7 @@ before any standardization, normalization, or mapping to canonical models.
 
 Main capabilities:
  - Encodes board-level BOM metadata (model number, revision, supplier, cost breakdown)
- - Encodes component-level BOM line items (reference, part number, quantity, price)
+ - Encodes component-level BOM rows (reference, part number, quantity, price)
  - Supports multiple board BOMs within a single file
  - Provides factory methods (`empty`) for zero-initialized object creation
 
@@ -40,9 +40,9 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class Item:
+class Row:
     """
-    Represents a single line item in the BOM.
+    Represents a single row in the BOM table.
 
     All fields are strings and default to the empty string ("") to simplify parsing
     and ensure consistent handling of missing or blank values.
@@ -110,14 +110,14 @@ class Header:
 @dataclass
 class Board:
     """
-    Represents a BOM for a single board, including header and all component line items.
+    Represents a BOM for a single board, including header and all component rows.
 
     Attributes:
         header (Header): Board-level metadata including model, stage, and costs.
-        items (list[Item]): List of component line items associated with this board.
+        rows (list[Row]): List of component rows associated with this board.
     """
     header: Header
-    items: list[Item] = field(default_factory=list)
+    rows: list[Row] = field(default_factory=list)
 
     @classmethod
     def empty(cls) -> "Board":
@@ -125,7 +125,7 @@ class Board:
         Factory method to create an empty board instance.
 
         Returns:
-            Board: A Board object with default header and an empty item list.
+            Board: A Board object with default header and an empty component list.
         """
         return cls(header=Header())
 

@@ -8,7 +8,7 @@ structure and headers.
 Main capabilities:
  - Detects whether an Excel workbook uses the v3 BOM format (`is_v3_bom`)
  - Extracts and parses board-level BOM data (`parse_v3_bom`)
- - Converts sheet content into structured `Board`, `Header`, and `Item` models
+ - Converts sheet content into structured `Board`, `Header`, and `Row` models
  - Handles malformed or non-matching sheets gracefully
 
 Example Usage:
@@ -23,7 +23,7 @@ Example Usage:
 Dependencies:
  - Python >= 3.10
  - pandas
- - src.models.interfaces: Bom, Board, Header, Item
+ - src.models.interfaces: Bom, Board, Header, Row
  - src.parsers._common: utility functions for flattening, extraction, and normalization
 
 Notes:
@@ -80,7 +80,7 @@ def _parse_board_sheet(sheet: pd.DataFrame) -> Board:
         sheet (pd.DataFrame): The board BOM sheet to be parsed.
 
     Returns:
-        Board: A structured Board object containing parsed header and component items.
+        Board: A structured Board object containing parsed header and component rows.
     """
     # Initialize an empty Board object
     board: Board = Board.empty()
@@ -92,8 +92,8 @@ def _parse_board_sheet(sheet: pd.DataFrame) -> Board:
 
     # Extract the BOM component table from the lower part of the sheet
     table_block = common.extract_table_block(sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
-    # Parse and assign the BOM items
-    board.items = _parse_board_table(table_block)
+    # Parse and assign the BOM rows
+    board.rows = _parse_board_table(table_block)
 
     return board
 
@@ -122,48 +122,48 @@ def _parse_board_header(sheet_header: pd.DataFrame) -> Header:
     return Header(**field_map)
 
 
-def _parse_board_table(sheet_table: pd.DataFrame) -> list[Item]:
+def _parse_board_table(sheet_table: pd.DataFrame) -> list[Row]:
     """
-    Parses the component table into a list of Item instances.
+    Parses the component table into a list of Row instances.
 
-    Iterates through each row and converts it to a structured Item object.
+    Iterates through each row and converts it to a structured Row object.
 
     Args:
         sheet_table (pd.DataFrame): The component table section of the BOM.
 
     Returns:
-        list[Item]: Parsed list of BOM component items.
+        list[Row]: Parsed list of BOM component rows.
     """
-    items: list[Item] = []
+    rows: list[Row] = []
 
     for _, row in sheet_table.iterrows():
-        # Convert each row of the table into an Item object
-        item = _parse_board_table_row(row)
-        # Append parsed Item to the result list
-        items.append(item)
+        # Convert each row of the table into an Row object
+        row = _parse_board_table_row(row)
+        # Append parsed row to the result list
+        rows.append(row)
 
-    return items
+    return rows
 
 
-def _parse_board_table_row(row: pd.Series) -> Item:
+def _parse_board_table_row(row: pd.Series) -> Row:
     """
-    Parses a single component row into an Item instance.
+    Parses a single component row into an Row instance.
 
-    Uses fuzzy label matching to extract values and maps them to the Item dataclass fields.
+    Uses fuzzy label matching to extract values and maps them to the Row dataclass fields.
 
     Args:
         row (pd.Series): One row of the BOM table.
 
     Returns:
-        Item: The parsed BOM component with mapped field values.
+        Row: The parsed BOM component with mapped field values.
     """
-    item_fields = {}
+    row_fields = {}
 
     for excel_label, model_field in TABLE_LABEL_TO_ATTR_MAP.items():
         # Extract each field using fuzzy matching against the row headers
-        item_fields[model_field] = common.extract_cell_value_by_fuzzy_header(row, excel_label)
+        row_fields[model_field] = common.extract_cell_value_by_fuzzy_header(row, excel_label)
 
-    return Item(**item_fields)
+    return Row(**row_fields)
 
 
 def is_v3_bom(sheets: list[tuple[str, pd.DataFrame]]) -> bool:

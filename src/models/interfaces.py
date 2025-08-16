@@ -6,7 +6,7 @@ It re-exports dataclass models and constants used to represent and parse
 BOMs. Internal modules must not be imported directly.
 
 Main capabilities:
- - Exposes Board, Bom, Header, and Item dataclasses
+ - Exposes Board, Bom, Header, and Row dataclasses
  - Exposes field mappings and template identifiers
  - Hides internal implementation from external consumers
 
@@ -37,7 +37,7 @@ from src.models._v3_raw import (
     Board,
     Bom,
     Header,
-    Item
+    Row
 )
 
 __all__ = [
@@ -50,5 +50,5 @@ __all__ = [
     'Board',
     'Bom',
     'Header',
-    'Item'
+    'Row'
 ]

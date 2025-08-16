@@ -3,12 +3,12 @@ Unit tests for Version 3 BOM parser functions.
 
 This module provides comprehensive test coverage for the `src.parsers._v3_bom_parser`
 module, which is responsible for parsing Version 3 Excel-based Bill of Materials (BOM)
-files into structured data models (`Bom`, `Board`, `Header`, `Item`).
+files into structured data models (`Bom`, `Board`, `Header`, `Row`).
 
 Main test capabilities:
  - Detect whether a sheet conforms to the V3 BOM format
  - Parse board-level metadata (header block)
- - Parse item-level component tables with messy or normalized headers
+ - Parse row-level component tables with messy or normalized headers
  - Verify full BOM file parsing across multi-board Excel files
 
 Example Usage:
@@ -251,12 +251,12 @@ class TestParseBoardSheet(unittest.TestCase):
     Unit test for the `_parse_board_sheet` function in the v3_parser module.
 
     This test verifies that a complete Version 3 BOM sheet can be parsed into a
-    structured `Board` object with valid `Header` and multiple `Item` entries.
+    structured `Board` object with valid `Header` and multiple `Row` entries.
     """
 
-    def test_of_bom_with_four_items(self):
+    def test_of_bom_with_four_rows(self):
         """
-        Should parse a full Version 3 BOM containing 4 item entries and a valid header.
+        Should parse a full Version 3 BOM containing 4 row entries and a valid header.
         """
         # ARRANGE
         # Load BOM sheet from test Excel file
@@ -276,8 +276,8 @@ class TestParseBoardSheet(unittest.TestCase):
                 overhead_cost="2.34",
                 total_cost="3.84"
             ),
-            items=[
-                Item(
+            rows=[
+                Row(
                     item="1",
                     component_type="PCB",
                     device_package="",
@@ -293,7 +293,7 @@ class TestParseBoardSheet(unittest.TestCase):
                     unit_price="0.5",
                     sub_total="0.5"
                 ),
-                Item(
+                Row(
                     item="",
                     component_type="ALT1",
                     device_package="",
@@ -309,7 +309,7 @@ class TestParseBoardSheet(unittest.TestCase):
                     unit_price="0.7",
                     sub_total="0"
                 ),
-                Item(
+                Row(
                     item="2",
                     component_type="Relay",
                     device_package="DIP",
@@ -325,7 +325,7 @@ class TestParseBoardSheet(unittest.TestCase):
                     unit_price="1",
                     sub_total="1"
                 ),
-                Item(
+                Row(
                     item="",
                     component_type="ALT1",
                     device_package="DIP",
@@ -357,13 +357,13 @@ class TestParseBoardSheet(unittest.TestCase):
             result_value = getattr(result_header, field_name)
             with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
                 self.assertEqual(result_value, expected_value)
-        # Verify each item field matches expected values
-        expected_items = expected.items
-        result_items = result.items
-        for expected_item, result_item in zip(expected_items, result_items):
-            for field_name in expected_item.__dict__:
-                expected_value = getattr(expected_item, field_name)
-                result_value = getattr(result_item, field_name)
+        # Verify each row field matches expected values
+        expected_rows = expected.rows
+        result_rows = result.rows
+        for expected_row, result_row in zip(expected_rows, result_rows):
+            for field_name in expected_row.__dict__:
+                expected_value = getattr(expected_row, field_name)
+                result_value = getattr(result_row, field_name)
                 with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
                     self.assertEqual(result_value, expected_value)
 
@@ -372,13 +372,13 @@ class TestParseBoardTable(unittest.TestCase):
     """
     Unit tests for the `_parse_board_table` function in the v3_parser module.
 
-    This test verifies whether the function can correctly extract a list of Item
+    This test verifies whether the function can correctly extract a list of Row
     instances from a BOM table with messy column headers and multiple rows.
     """
 
     def test_with_two_rows_and_messy_header(self):
         """
-        Should parse a BOM table with two rows and messy headers into Item instances.
+        Should parse a BOM table with two rows and messy headers into Row instances.
         """
         # ARRANGE
         # Simulated BOM table with inconsistent spacing, newline, and tab characters in headers
@@ -418,7 +418,7 @@ class TestParseBoardTable(unittest.TestCase):
         ])
 
         expected = [
-            Item(
+            Row(
                 item="1",
                 component_type="Relay",
                 device_package="DIP",
@@ -434,7 +434,7 @@ class TestParseBoardTable(unittest.TestCase):
                 unit_price="1.000",
                 sub_total="1.000"
             ),
-            Item(
+            Row(
                 item="2",
                 component_type="Capacitor",
                 device_package="0805",
@@ -457,11 +457,11 @@ class TestParseBoardTable(unittest.TestCase):
         result = v3_parser._parse_board_table(table_df)
 
         # ASSERT
-        for result_item, expected_item in zip(result, expected):
+        for result_row, expected_row in zip(result, expected):
             # All fields match
-            for field_name in expected_item.__dict__:
-                expected_value = getattr(expected_item, field_name)
-                result_value = getattr(result_item, field_name)
+            for field_name in expected_row.__dict__:
+                expected_value = getattr(expected_row, field_name)
+                result_value = getattr(result_row, field_name)
                 with self.subTest(Field=field_name, Out=result_value, Exp=expected_value):
                     self.assertEqual(result_value, expected_value)
 
@@ -471,12 +471,12 @@ class TestParseBoardTableRow(unittest.TestCase):
     Unit test for the `_parse_board_table_row` function in the v3_parser module.
 
     This test ensures a single BOM row with messy or irregular header formatting
-    is correctly parsed into an `Item` instance.
+    is correctly parsed into an `Row` instance.
     """
 
     def test_with_messy_header(self):
         """
-        Should parse a BOM row with inconsistent column formatting into an Item instance.
+        Should parse a BOM row with inconsistent column formatting into an Row instance.
         """
         # ARRANGE
         # Simulated single BOM row with headers containing whitespace, newline, and tab characters
@@ -498,7 +498,7 @@ class TestParseBoardTableRow(unittest.TestCase):
         })
 
         # Expected result from cleaned header and values
-        expected = Item(
+        expected = Row(
             item="1",
             component_type="Relay",
             device_package="DIP",
@@ -520,7 +520,7 @@ class TestParseBoardTableRow(unittest.TestCase):
         result = v3_parser._parse_board_table_row(row)
 
         # ASSERT
-        # All Item field must match
+        # All row field must match
         for field_name in expected.__dict__:
             expected_value = getattr(expected, field_name)
             result_value = getattr(result, field_name)
@@ -533,7 +533,7 @@ class TestParseBom(unittest.TestCase):
     Unit test for the `parse_v3_bom` function in the v3_parser module.
 
     This test verifies that a multi-board Version 3 BOM Excel file is correctly parsed
-    into a Bom object containing multiple Board instances with valid Headers and Items.
+    into a Bom object containing multiple Board instances with valid Headers and Rows.
     """
 
     def test_parse_multiple_boards_from_version3_excel(self):
@@ -567,8 +567,8 @@ class TestParseBom(unittest.TestCase):
                         overhead_cost="1.25",
                         total_cost="2.15"
                     ),
-                    items=[
-                        Item(
+                    rows=[
+                        Row(
                             item="1",
                             component_type="Substrate",
                             device_package="—",
@@ -584,11 +584,11 @@ class TestParseBom(unittest.TestCase):
                             unit_price="0.8",
                             sub_total="0.8"
                         ),
-                        Item("", "ALT1", "—", "Generic 2-layer, 1OZ, 1.6mm, 210mm × 70mm", "PCS", "A",
+                        Row("", "ALT1", "—", "Generic 2-layer, 1OZ, 1.6mm, 210mm × 70mm", "PCS", "A",
                              "FabVendor B", "SUB-ALT1", "CERT-0002", "PP0", "0", "", "0.9", "0"),
-                        Item("2", "Switch", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
+                        Row("2", "Switch", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
                              "SwitchMfr A", "SW-01", "CERT-1001", "PP0/PP1", "1", "SW1", "0.1", "0.1"),
-                        Item("", "ALT1", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
+                        Row("", "ALT1", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
                              "SwitchMfr B", "SW-ALT1", "CERT-1002", "PP0", "0", "", "0.2", "0")
                     ]
                 ),
@@ -603,8 +603,8 @@ class TestParseBom(unittest.TestCase):
                         overhead_cost="2.35",
                         total_cost="4.15"
                     ),
-                    items=[
-                        Item(
+                    rows=[
+                        Row(
                             item="1",
                             component_type="Resistor",
                             device_package="603",
@@ -620,15 +620,15 @@ class TestParseBom(unittest.TestCase):
                             unit_price="0.1",
                             sub_total="0.1"
                         ),
-                        Item("2", "Capacitor", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "Captek", "C-1U-0805",
+                        Row("2", "Capacitor", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "Captek", "C-1U-0805",
                              "UL654321", "EV2", "1", "C1", "0.2", "0.2"),
-                        Item("", "ALT1", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "AltCap", "AC-1U-0805",
+                        Row("", "ALT1", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "AltCap", "AC-1U-0805",
                              "UL654322", "EV3", "0", "", "0.22", "0"),
-                        Item("3", "Diode", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "Diotronics",
+                        Row("3", "Diode", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "Diotronics",
                              "D-1A-100V", "UL987654", "EV4", "1", "D1", "1.5", "1.5"),
-                        Item("", "ALT1", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "SemiComp",
+                        Row("", "ALT1", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "SemiComp",
                              "SC-D100", "UL987655", "EV5", "0", "", "1.45", "0"),
-                        Item("", "ALT2", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "FastFlow",
+                        Row("", "ALT2", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "FastFlow",
                              "FF-1A100V", "UL987656", "EV6", "0", "", "1.48", "0")
                     ]
                 )
@@ -664,14 +664,14 @@ class TestParseBom(unittest.TestCase):
                 result_value = getattr(result_header, field_name)
                 with self.subTest("Header", Field=field_name, Out=result_value, Exp=expected_value):
                     self.assertEqual(result_value, expected_value)
-            # Verify board item fields
-            expected_items = expected.items
-            result_items = result.items
-            for expected_item, result_item in zip(expected_items, result_items):
-                for field_name in expected_item.__dict__:
-                    expected_value = getattr(expected_item, field_name)
-                    result_value = getattr(result_item, field_name)
-                    with self.subTest("Item", Field=field_name, Out=result_value, Exp=expected_value):
+            # Verify board row fields
+            expected_rows = expected.rows
+            result_rows = result.rows
+            for expected_row, result_row in zip(expected_rows, result_rows):
+                for field_name in expected_row.__dict__:
+                    expected_value = getattr(expected_row, field_name)
+                    result_value = getattr(result_row, field_name)
+                    with self.subTest("Row", Field=field_name, Out=result_value, Exp=expected_value):
                         self.assertEqual(result_value, expected_value)
 
 
