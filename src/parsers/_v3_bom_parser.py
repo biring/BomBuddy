@@ -42,7 +42,7 @@ import src.parsers._common as common
 from src.models.interfaces import *
 
 
-def _is_v3_board_sheet(name: str, sheet: pd.DataFrame) -> bool:
+def _is_v3_board_sheet(sheet_name: str, sheet_data: pd.DataFrame) -> bool:
     """
     Checks whether a sheet contains required identifiers for a Version 3 board BOM.
 
@@ -50,14 +50,14 @@ def _is_v3_board_sheet(name: str, sheet: pd.DataFrame) -> bool:
     as a Version 3 BOM. This is used to selectively parse valid board sheets.
 
     Args:
-        name (str): Name of the sheet (for logging/diagnostic purposes).
-        sheet (pd.DataFrame): The DataFrame representing the Excel sheet.
+        sheet_name (str): Name of the sheet (for logging/diagnostic purposes).
+        sheet_data (pd.DataFrame): The DataFrame representing the Excel sheet.
 
     Returns:
         bool: True if all required identifiers are found, False otherwise.
     """
     # Check for all required identifiers in a single row to qualify as a Version 3 board BOM
-    if common.has_all_identifiers_in_single_row(name, sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS):
+    if common.has_all_identifiers_in_single_row(sheet_name, sheet_data, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS):
         # TODO: logger.info(f"✅ Sheet '{name}' is version 3 board BOM.")
         # when match found, exit
         return True
@@ -69,7 +69,7 @@ def _is_v3_board_sheet(name: str, sheet: pd.DataFrame) -> bool:
     return False
 
 
-def _parse_board_sheet(sheet: pd.DataFrame) -> Board:
+def _parse_board_sheet(sheet_name: str, sheet_data: pd.DataFrame) -> Board:
     """
     Parses a board BOM sheet into a structured Board object.
 
@@ -77,7 +77,8 @@ def _parse_board_sheet(sheet: pd.DataFrame) -> Board:
     structured dataclass instances.
 
     Args:
-        sheet (pd.DataFrame): The board BOM sheet to be parsed.
+        sheet_name (str): Name of the Excel sheet being parsed.
+        sheet_data (pd.DataFrame): The board BOM sheet to be parsed.
 
     Returns:
         Board: A structured Board object containing parsed header and component rows.
@@ -85,13 +86,16 @@ def _parse_board_sheet(sheet: pd.DataFrame) -> Board:
     # Initialize an empty Board object
     board: Board = Board.empty()
 
+    # Attach sheet name
+    board.sheet_name = sheet_name
+
     # Extract board-level metadata block from the top of the sheet
-    header_block = common.extract_header_block(sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
+    header_block = common.extract_header_block(sheet_data, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
     # Parse and assign header metadata
     board.header = _parse_board_header(header_block)
 
     # Extract the BOM component table from the lower part of the sheet
-    table_block = common.extract_table_block(sheet, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
+    table_block = common.extract_table_block(sheet_data, REQUIRED_V3_BOARD_TABLE_IDENTIFIERS)
     # Parse and assign the BOM rows
     board.rows = _parse_board_table(table_block)
 
@@ -179,9 +183,9 @@ def is_v3_bom(sheets: list[tuple[str, pd.DataFrame]]) -> bool:
         bool: True if any sheet matches the v3 BOM structure, False otherwise.
     """
     # Iterate through all sheets and check for required identifiers
-    for name, sheet in sheets:
+    for sheet_name, sheet_data in sheets:
         # If it contains the labels that identify it as version 3 template
-        if common.has_all_identifiers_in_single_row(name, sheet, REQUIRED_V3_BOM_IDENTIFIERS):
+        if common.has_all_identifiers_in_single_row(sheet_name, sheet_data, REQUIRED_V3_BOM_IDENTIFIERS):
             # TODO: logger.info(f"✅ Sheet '{name}' is using version 3 BOM template.")
             # TODO: logger.info(f"✅ BOM is using version 3 template.")
             # Return True on first match
@@ -215,11 +219,11 @@ def parse_v3_bom(sheets: list[tuple[str, pd.DataFrame]]) -> Bom:
     bom = Bom.empty()
 
     # Loop through each sheet
-    for name, sheet in sheets:
+    for sheet_name, sheet_data in sheets:
         # Check if sheet is a valid board BOM
-        if _is_v3_board_sheet(name, sheet):
+        if _is_v3_board_sheet(sheet_name, sheet_data):
             # Parse and append valid boards to the BOM
-            bom.boards.append(_parse_board_sheet(sheet))
+            bom.boards.append(_parse_board_sheet(sheet_name, sheet_data))
             # TODO: logger.info(f"✅ Sheet '{name}' was parsed..")
         else:
             # TODO: logger.debug(f"⚠️ Sheet '{name}' was not parsed.")

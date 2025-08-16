@@ -114,9 +114,11 @@ class Board:
 
     Attributes:
         header (Header): Board-level metadata including model, stage, and costs.
+        sheet_name (str): Name of the Excel sheet from which this board data is read.
         rows (list[Row]): List of component rows associated with this board.
     """
     header: Header
+    sheet_name: str = ""
     rows: list[Row] = field(default_factory=list)
 
     @classmethod
@@ -127,7 +129,7 @@ class Board:
         Returns:
             Board: A Board object with default header and an empty component list.
         """
-        return cls(header=Header())
+        return cls(sheet_name="", header=Header())
 
 
 @dataclass

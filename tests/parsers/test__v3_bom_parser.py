@@ -259,11 +259,12 @@ class TestParseBoardSheet(unittest.TestCase):
         Should parse a full Version 3 BOM containing 4 row entries and a valid header.
         """
         # ARRANGE
-        # Load BOM sheet from test Excel file
+        # Load BOM sheet from test Excel file. Excel file is expected to only have one sheet.
         base_dir = os.path.dirname(__file__)
         file_path = os.path.join(base_dir, "test_data", "Version3BomSample.xlsx")
         with pd.ExcelFile(file_path, engine="openpyxl") as xls:
             df = pd.read_excel(xls, dtype=str, header=None)
+            sheet_name = xls.sheet_names[0]
 
         expected = Board(
             header=Header(
@@ -276,6 +277,7 @@ class TestParseBoardSheet(unittest.TestCase):
                 overhead_cost="2.34",
                 total_cost="3.84"
             ),
+            sheet_name="POWER PCBA",
             rows=[
                 Row(
                     item="1",
@@ -346,9 +348,15 @@ class TestParseBoardSheet(unittest.TestCase):
 
         # ACT
         # Parse the BOM sheet
-        result = v3_parser._parse_board_sheet(df)
+        result = v3_parser._parse_board_sheet(sheet_name, df)
 
         # ASSERT
+        # Verify sheet name match expected value
+        expected_sheet_name = expected.sheet_name
+        result_sheet_name = result.sheet_name
+        with self.subTest("Sheet Name", Out=result_sheet_name, Exp=expected_sheet_name):
+            self.assertEqual(result_sheet_name, expected_sheet_name)
+
         # Verify all header fields match expected values
         expected_header = expected.header
         result_header = result.header
@@ -567,6 +575,7 @@ class TestParseBom(unittest.TestCase):
                         overhead_cost="1.25",
                         total_cost="2.15"
                     ),
+                    sheet_name="Board1",
                     rows=[
                         Row(
                             item="1",
@@ -585,11 +594,11 @@ class TestParseBom(unittest.TestCase):
                             sub_total="0.8"
                         ),
                         Row("", "ALT1", "—", "Generic 2-layer, 1OZ, 1.6mm, 210mm × 70mm", "PCS", "A",
-                             "FabVendor B", "SUB-ALT1", "CERT-0002", "PP0", "0", "", "0.9", "0"),
+                            "FabVendor B", "SUB-ALT1", "CERT-0002", "PP0", "0", "", "0.9", "0"),
                         Row("2", "Switch", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
-                             "SwitchMfr A", "SW-01", "CERT-1001", "PP0/PP1", "1", "SW1", "0.1", "0.1"),
+                            "SwitchMfr A", "SW-01", "CERT-1001", "PP0/PP1", "1", "SW1", "0.1", "0.1"),
                         Row("", "ALT1", "DIP", "12VDC 15A SPST, 20×15×20mm, -40~105℃", "PCS", "A",
-                             "SwitchMfr B", "SW-ALT1", "CERT-1002", "PP0", "0", "", "0.2", "0")
+                            "SwitchMfr B", "SW-ALT1", "CERT-1002", "PP0", "0", "", "0.2", "0")
                     ]
                 ),
                 Board(
@@ -603,6 +612,7 @@ class TestParseBom(unittest.TestCase):
                         overhead_cost="2.35",
                         total_cost="4.15"
                     ),
+                    sheet_name="Board2",
                     rows=[
                         Row(
                             item="1",
@@ -621,15 +631,15 @@ class TestParseBom(unittest.TestCase):
                             sub_total="0.1"
                         ),
                         Row("2", "Capacitor", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "Captek", "C-1U-0805",
-                             "UL654321", "EV2", "1", "C1", "0.2", "0.2"),
+                            "UL654321", "EV2", "1", "C1", "0.2", "0.2"),
                         Row("", "ALT1", "805", "1uF ±10%, 50V, X7R, 0805", "PCS", "A", "AltCap", "AC-1U-0805",
-                             "UL654322", "EV3", "0", "", "0.22", "0"),
+                            "UL654322", "EV3", "0", "", "0.22", "0"),
                         Row("3", "Diode", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "Diotronics",
-                             "D-1A-100V", "UL987654", "EV4", "1", "D1", "1.5", "1.5"),
+                            "D-1A-100V", "UL987654", "EV4", "1", "D1", "1.5", "1.5"),
                         Row("", "ALT1", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "SemiComp",
-                             "SC-D100", "UL987655", "EV5", "0", "", "1.45", "0"),
+                            "SC-D100", "UL987655", "EV5", "0", "", "1.45", "0"),
                         Row("", "ALT2", "SOD-123", "1A, 100V, Fast Recovery, SOD-123", "PCS", "A", "FastFlow",
-                             "FF-1A100V", "UL987656", "EV6", "0", "", "1.48", "0")
+                            "FF-1A100V", "UL987656", "EV6", "0", "", "1.48", "0")
                     ]
                 )
             ]
@@ -656,6 +666,12 @@ class TestParseBom(unittest.TestCase):
         expected_boards = expected.boards
         result_boards = result.boards
         for expected, result in zip(expected_boards, result_boards):
+            # Verify sheet name match expected value
+            expected_sheet_name = expected.sheet_name
+            result_sheet_name = result.sheet_name
+            with self.subTest("Sheet Name", Out=result_sheet_name, Exp=expected_sheet_name):
+                self.assertEqual(result_sheet_name, expected_sheet_name)
+
             # Verify board header fields
             expected_header = expected.header
             result_header = result.header
