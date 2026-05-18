@@ -25,12 +25,17 @@ Expected Project Layout:
     └── bom-check.spec          (created by PyInstaller, auto deleted by this script on successful executable build)
 
 Example Usage:
-	from scripts import build_exe
-	result = build_exe.build_executable()
+    # Preferred usage from project automation or CI pipeline:
+    from scripts import build_exe
+    result = build_exe.build_executable()
+
+    # Direct execution:
+    python -m scripts.build_exe
 
 Dependencies:
-	- Python version: >= 3.9
-	- Standard Library: os, shutil, stat, subprocess, sys, pathlib
+    - Python >= 3.9
+    - Standard Library: os, shutil, stat, subprocess, sys, pathlib
+    - External Packages: PyInstaller
 
 Notes:
 	- Designed for repeatable execution with idempotent cleanup behavior
@@ -49,6 +54,7 @@ import stat
 import subprocess
 import sys
 from pathlib import Path
+from src.version import BUILD
 
 # This script lives in <project_root>/scripts/, so go one level up.
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
@@ -243,6 +249,11 @@ def _build() -> None:
 
         # Prefer Windows executable if present; fallback to extensionless binary otherwise
         final_executable_path = exe_win if exe_win.exists() else exe_path
+
+        # Append build number to file name
+        named_executable_path = final_executable_path.parent / f"bom-check-b{BUILD}.exe"
+        final_executable_path.rename(named_executable_path)
+        final_executable_path = named_executable_path
 
         # Report successful build output location
         print(f"\n  [OK] Executable ready: {final_executable_path}")
