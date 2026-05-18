@@ -48,17 +48,24 @@ License:
 """
 __all__ = []  # Internal-only module; explicitly exports nothing to prevent accidental public use.
 
+# --- Standard Library Imports -------------------------------------------------
 import os
 import shutil
 import stat
 import subprocess
 import sys
 from pathlib import Path
+
+# --- Path Setup ---------------------------------------------------------------
+# This script lives in <project_root>/scripts/, so go one level up.
+# Project root must be on sys.path before any src.* imports can be resolved.
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# --- Project Imports ----------------------------------------------------------
 from src.version import BUILD
 
-# This script lives in <project_root>/scripts/, so go one level up.
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
-
+# --- Module Constants ---------------------------------------------------------
 CLEAN_FOLDERS = [
     PROJECT_ROOT / "build",
     PROJECT_ROOT / "dist",
