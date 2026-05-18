@@ -1,4 +1,3 @@
-from src import files
 from src import strings
 from src import frames
 from src.enumeration import SourceFileType, OutputFileType, BomTempVer
@@ -10,6 +9,7 @@ from src.controllers import _base as base # migrating to controller to deprecati
 from src.cli import interfaces as cli
 from src.menus import interfaces as menu
 from src.importers import interfaces as importer
+from src.exporters import interfaces as exporter
 
 # module constants
 ctrl = base.BaseController()
@@ -36,11 +36,23 @@ def sequence_cbom_for_cost_walk() -> None:
     )
 
     # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    excel_dict = importer.read_excel_as_dict(
+        folder=folder_path,
+        file_name=file_name,
+        top_row_is_header=False
+    )
+
+    # Get sheet to process
+    sheet_names = list(excel_dict.keys())
+    user_selection = cli.prompt_menu_selection(
+        menu_items=sheet_names,
+        header_msg="Select sheet name: ",
+        select_msg="Enter number to make sheet selection: ",
+    )
 
     # *** Extract cbom sheet to process ***
     # extract user selected Excel file sheet
-    df = files.get_user_selected_excel_file_sheet(excel_data)
+    df = excel_dict[sheet_names[user_selection]]
     # only keep cost data for build on interest
     df = frames.select_build(df)
 
@@ -94,8 +106,15 @@ def sequence_cbom_for_cost_walk() -> None:
     )
     # Set Excel file name
     file_name = OutputFileType.CW.value + file_name
+    file_name = file_name.rsplit('.', 1)[0]
     # write Excel file data
-    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+    exporter.write_excel_sheets(
+        folder=folder_path,
+        file_name=file_name,
+        sheets={"CW":df},
+        overwrite=True,
+        top_row_is_header=True,
+    )
 
     cli.show_success("\nCost walk workflow completed successfully.")
 
@@ -122,10 +141,23 @@ def sequence_cbom_for_db_upload() -> None:
         menu_prompt=None,
     )
     # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    excel_dict = importer.read_excel_as_dict(
+        folder=folder_path,
+        file_name=file_name,
+        top_row_is_header=False
+    )
 
-    # *** Extract sheet to process ***
-    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # Get sheet to process
+    sheet_names = list(excel_dict.keys())
+    user_selection = cli.prompt_menu_selection(
+        menu_items=sheet_names,
+        header_msg="Select sheet name: ",
+        select_msg="Enter number to make sheet selection: ",
+    )
+
+    # *** Extract cbom sheet to process ***
+    # extract user selected Excel file sheet
+    df = excel_dict[sheet_names[user_selection]]
     # only keep cost data for build on interest
     df = frames.select_build(df)
 
@@ -211,8 +243,15 @@ def sequence_cbom_for_db_upload() -> None:
     )
     # Set Excel file name
     file_name = OutputFileType.dB_CB.value + file_name
+    file_name = file_name.rsplit('.', 1)[0]
     # write Excel file data
-    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+    exporter.write_excel_sheets(
+        folder=folder_path,
+        file_name=file_name,
+        sheets={"CBOM":df},
+        overwrite=True,
+        top_row_is_header=True,
+    )
 
     cli.show_success("\ncBOM generation workflow completed successfully.")
 
@@ -239,10 +278,23 @@ def sequence_ebom_for_db_upload():
         menu_prompt=None,
     )
     # read excel file data
-    excel_data = files.read_raw_excel_file_data(folder_path, file_name)
+    excel_dict = importer.read_excel_as_dict(
+        folder=folder_path,
+        file_name=file_name,
+        top_row_is_header=False,
+    )
+
+    # Get sheet to process
+    sheet_names = list(excel_dict.keys())
+    user_selection = cli.prompt_menu_selection(
+        menu_items=sheet_names,
+        header_msg="Select sheet name: ",
+        select_msg="Enter number to make sheet selection: ",
+    )
 
     # *** Extract cbom sheet to process ***
-    df = files.get_user_selected_excel_file_sheet(excel_data)
+    # extract user selected Excel file sheet
+    df = excel_dict[sheet_names[user_selection]]
     # only keep cost data for build on interest
     df = frames.select_build(df)
 
@@ -333,8 +385,15 @@ def sequence_ebom_for_db_upload():
     )
     # Set Excel file name
     file_name = OutputFileType.db_EB.value + file_name
+    file_name = file_name.rsplit('.', 1)[0]
     # write Excel file data
-    files.write_single_sheet_excel_file_data(folder_path, file_name, df)
+    exporter.write_excel_sheets(
+        folder=folder_path,
+        file_name=file_name,
+        sheets={"EBOM":df},
+        overwrite=True,
+        top_row_is_header=True,
+    )
 
     cli.show_success("\neBOM generation workflow completed successfully.")
 
