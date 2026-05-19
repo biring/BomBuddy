@@ -1,6 +1,6 @@
-from src import strings
-from src import frames
-from src.enumeration import SourceFileType, OutputFileType, BomTempVer
+from src.legacy import strings
+from src.legacy import frames
+from src.legacy.enumeration import SourceFileType, OutputFileType, BomTempVer
 
 
 # noinspection PyProtectedMember

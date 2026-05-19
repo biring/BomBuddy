@@ -1,6 +1,6 @@
 import re
 
-from src import strings
+from src.legacy import strings
 import pandas as pd
 
 

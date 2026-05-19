@@ -34,7 +34,7 @@ __all__ = [
     'run_application',
 ]
 
-from src import application
+from src.legacy import application
 from src import version
 from src.cli import interfaces as cli
 from src.controllers import interfaces as controller

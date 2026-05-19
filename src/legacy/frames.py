@@ -3,12 +3,12 @@ from typing import Type
 
 import pandas as pd
 
-from src import columns
-from src import header
-from src import rows
-from src import strings
+from src.legacy import columns
+from src.legacy import header
+from src.legacy import rows
+from src.legacy import strings
 
-from src.enumeration import SourceFileType, OutputFileType, BomTempVer
+from src.legacy.enumeration import SourceFileType, OutputFileType, BomTempVer
 
 # Standardized header names used across eBOM, cBOM and cost walk. They are based off the bom template v2.0 and v3.0
 itemHdr = "Item"
@@ -575,7 +575,6 @@ def check_qty_matched_ref_des_count(df):
 
 
 def normalize_component_type_label(df):
-    import strings
 
     # message
     print()

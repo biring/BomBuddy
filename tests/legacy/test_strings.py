@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from src.strings import strip_match_from_string
+from src.legacy.strings import strip_match_from_string
 
 from unittest.mock import patch
 
